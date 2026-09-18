@@ -1,0 +1,1445 @@
+<title>기묘한 미로</title>
+<meta name="description" content="호킨스 연구소의 진짜 갈림길이 있는 3D 그리드 미로를 탐험하는 브라우저 게임. 방향키로 걷고 돌고, 스페이스바로 아이템을 줍고 조우를 선택한다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Gothic+A1:wght@400;500;700;800&family=Noto+Serif+KR:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0b0d;
+    --panel: #1b1e24;
+    --panel-2: #242833;
+    --edge: #333844;
+    --ink: #eee9e0;
+    --muted: #9aa0ac;
+    --red: #d92a33;
+    --red-deep: #5a1218;
+    --red-glow: #ff5b52;
+    --cyan: #4fd7dc;
+    --magenta: #e35fc9;
+    --amber: #f0b656;
+    --good: #5fce88;
+    --font-display: 'Song Myung', serif;
+    --font-ui: 'Gothic A1', sans-serif;
+    --font-mono: 'Space Mono', 'Gothic A1', monospace;
+    --font-body: 'Noto Serif KR', serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-ui);
+    margin: 0; padding: 24px 16px 48px; min-height: 100vh; position: relative; overflow-x: hidden;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 2px, transparent 4px);
+    mix-blend-mode: overlay;
+  }
+  body::after {
+    content: ""; position: fixed; inset: -10%; pointer-events: none; z-index: 4;
+    background: radial-gradient(ellipse at 50% 0%, rgba(227, 95, 201, 0.12), transparent 60%);
+    animation: pulse-glow 7s ease-in-out infinite;
+  }
+  @keyframes pulse-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { body::after { animation: none; } }
+  .app { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+  .masthead { text-align: center; margin-bottom: 20px; }
+  .masthead h1 {
+    font-family: var(--font-display); font-size: clamp(2.1rem, 7vw, 3.1rem); letter-spacing: 0.05em;
+    color: var(--ink); text-shadow: 0 0 20px rgba(227, 95, 201, 0.5), 0 0 2px var(--red-glow);
+    margin: 0; text-wrap: balance;
+  }
+  .masthead .sub { display: block; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.3em; color: var(--cyan); margin-top: 6px; }
+  .screen { display: flex; flex-direction: column; gap: 18px; }
+  .panel { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--edge); border-radius: 10px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+  .flavor { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0 0 10px; }
+  .lede { font-family: var(--font-body); font-size: 1.05rem; line-height: 1.85; color: var(--muted); text-align: center; max-width: 54ch; margin: 0 auto; }
+  button {
+    font-family: var(--font-ui); font-weight: 600; font-size: 0.95rem; cursor: pointer; border-radius: 8px;
+    border: 1px solid var(--edge); background: var(--panel-2); color: var(--ink); padding: 14px 16px;
+    transition: border-color .15s, transform .1s, background .15s;
+  }
+  button:hover { border-color: var(--cyan); background: #2c3140; }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  button.selected { border-color: var(--amber); background: rgba(240,182,86,.16); box-shadow: 0 0 0 1px var(--amber); }
+  .btn-primary { background: var(--red-deep); border-color: var(--red); color: #fff2f2; font-family: var(--font-display); letter-spacing: .02em; font-weight: 400; font-size: 1.05rem; }
+  .btn-primary:hover { background: var(--red); }
+  .center { display: flex; justify-content: center; }
+  .action-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  @media (min-width: 480px) { .action-grid { grid-template-columns: repeat(3, 1fr); } }
+  .kbd { font-family: var(--font-mono); font-size: .72rem; opacity: .65; }
+  .char-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 560px) { .char-grid { grid-template-columns: 1fr 1fr; } }
+  .char-card { text-align: left; display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+  .char-card .char-name { font-family: var(--font-display); font-size: 1.2rem; }
+  .char-card .char-hp { font-family: var(--font-mono); color: var(--red-glow); font-size: 0.85rem; }
+  .char-card .char-desc { font-family: var(--font-body); font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+  .game-stage { position: relative; width: 100%; height: min(66vh,580px); min-height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid var(--edge); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  #scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 14px 20px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
+  .status-left { display: flex; flex-direction: column; gap: 2px; }
+  .status-left .char { color: var(--cyan); font-size: .82rem; font-family: var(--font-ui); }
+  .status-left .stage { font-size: .93rem; font-family: var(--font-ui); font-weight: 600; }
+  .hearts { font-size: 1.15rem; letter-spacing: 2px; }
+  .heart-full { color: var(--red-glow); text-shadow: 0 0 8px rgba(255,91,82,.7); }
+  .heart-empty { color: #4a2f30; }
+  .inventory { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; order: 3; }
+  .chip { font-family: var(--font-mono); font-size: .74rem; background: rgba(240,182,86,.14); border: 1px solid rgba(240,182,86,.4); color: var(--amber); border-radius: 999px; padding: 3px 10px; }
+  .minimap-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .minimap-wrap svg { background: rgba(6,7,10,.55); border: 1px solid var(--edge); border-radius: 6px; }
+  .item-hint { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 2; font-family: var(--font-ui); font-size: .8rem; color: var(--amber); background: rgba(10,8,13,.75); border: 1px solid rgba(240,182,86,.5); border-radius: 999px; padding: 6px 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .item-hint.show { opacity: 1; }
+  .dpad { position: absolute; left: 14px; bottom: 14px; z-index: 3; display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(2, 40px); gap: 4px; }
+  .dpad-btn { padding: 0; font-size: 1.05rem; line-height: 1; background: rgba(10,8,13,.6); backdrop-filter: blur(2px); }
+  .dpad-up { grid-column: 2; grid-row: 1; }
+  .dpad-left { grid-column: 1; grid-row: 2; }
+  .dpad-right { grid-column: 3; grid-row: 2; }
+  .dpad-down { grid-column: 2; grid-row: 2; }
+  .toast { position: absolute; top: 84px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 3; background: rgba(14,12,18,.92); border: 1px solid var(--edge); border-radius: 8px; padding: 8px 16px; font-family: var(--font-body); font-size: .92rem; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; max-width: 84%; text-align: center; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* action-panel lives BELOW the 3D view (not overlaid on it), so it
+     never collides with the D-pad or any other canvas overlay. */
+  .action-panel { min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
+  .action-panel:empty { display: none; }
+  .action-panel.shock { animation: shock-flash .4s ease-out; }
+  @keyframes shock-flash { 0% { box-shadow: inset 0 0 40px 6px rgba(217,42,51,.5); } 100% { box-shadow: inset 0 0 0 0 rgba(217,42,51,0); } }
+  @media (prefers-reduced-motion: reduce) { .action-panel.shock { animation: none; } }
+  .hint-line { font-family: var(--font-ui); font-size: .8rem; color: var(--muted); margin: 0 0 6px; text-align: center; }
+  .quiz-question, .pref-prompt { font-family: var(--font-body); font-size: 1.02rem; line-height: 1.6; margin: 0 0 14px; }
+  .options-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .result-message { font-family: var(--font-body); font-size: 1.02rem; line-height: 1.6; margin: 0 0 16px; }
+  .badge { display: inline-block; font-family: var(--font-mono); font-size: .7rem; letter-spacing: .1em; padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; }
+  .badge-success { background: rgba(95,206,136,.18); color: var(--good); border: 1px solid rgba(95,206,136,.4); }
+  .badge-fail { background: rgba(217,42,51,.18); color: var(--red-glow); border: 1px solid rgba(217,42,51,.4); }
+  .stage-clear, .game-over, .season-clear { text-align: center; }
+  .stage-clear h2, .game-over h2, .season-clear h2 { font-family: var(--font-display); font-size: 1.7rem; margin: 10px 0 6px; }
+  .stage-clear h2 { color: var(--cyan); }
+  .game-over h2 { color: var(--red-glow); }
+  .season-clear h2 { color: var(--amber); }
+  .recap-stats { display: flex; justify-content: center; gap: 18px; font-family: var(--font-mono); font-size: .8rem; color: var(--muted); margin: 8px 0 14px; }
+  .recap-stats span { text-align: center; line-height: 1.6; }
+  .recap-stats b { color: var(--ink); font-size: .95rem; }
+  .recap-map { display: flex; justify-content: center; margin: 10px 0 16px; }
+  .footnote { text-align: center; font-family: var(--font-mono); font-size: .7rem; color: var(--muted); letter-spacing: .03em; }
+</style>
+<div class="app">
+  <div class="masthead"><h1>기묘한 미로</h1><span class="sub">STRANGER MAZES · SEASON 1 · 3D</span></div>
+
+  <main id="screen-title" class="screen">
+    <div class="panel">
+      <p class="lede">호킨스 연구소 지하, 뒤집힌 세계로 이어지는 진짜 갈림길투성이 미로에 갇혔다.
+      <b>방향키(↑↓←→)</b>로 걷고 돌아 진짜 좌/우 통로를 탐험하라. 아이템 위에서 <b>스페이스바</b>로 줍고,
+      데모고르곤을 만나면 <b>1</b> 싸움 / <b>2</b> 퀴즈 / <b>3</b> 취향 맞추기(또는 스페이스바로 고르고 엔터) 중 하나로 맞서라.</p>
+    </div>
+    <div class="center"><button class="btn-primary" data-action="goto-select">새 게임 시작</button></div>
+    <div id="continue-row" class="center" hidden><button data-action="continue-save">이어하기 (이 브라우저에 저장된 기록)</button></div>
+  </main>
+
+  <main id="screen-select" class="screen" hidden>
+    <div class="panel"><p class="flavor" style="margin:0">플레이할 캐릭터를 고르세요. 캐릭터마다 실제 플레이에 영향을 주는 고유 능력이 있습니다.</p></div>
+    <div class="char-grid" id="char-grid"></div>
+  </main>
+
+  <main id="screen-game" class="screen" hidden>
+    <div class="game-stage">
+      <canvas id="scene-canvas"></canvas>
+      <div class="hud-status" id="status-bar"></div>
+      <div class="item-hint" id="item-hint">스페이스바로 상호작용</div>
+      <div class="toast" id="toast"></div>
+      <div class="dpad" id="dpad">
+        <button class="dpad-btn dpad-up" data-move="forward" aria-label="전진">▲</button>
+        <button class="dpad-btn dpad-left" data-move="left" aria-label="왼쪽으로 회전">◀</button>
+        <button class="dpad-btn dpad-right" data-move="right" aria-label="오른쪽으로 회전">▶</button>
+        <button class="dpad-btn dpad-down" data-move="backward" aria-label="후진">▼</button>
+      </div>
+    </div>
+    <div class="panel action-panel" id="viewport"></div>
+  </main>
+
+  <p class="footnote">↑↓ 전진/후진 · ← → 회전 · Space 상호작용/선택 · ↓ 조우 취소 · Enter 확정 · 1·2·3 단축키</p>
+</div>
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // Content
+  // ---------------------------------------------------------------
+  const CHARACTERS = {
+    el:     { name: "엘 (일레븐)", baseHp: 3, ability: "psychic_strike",
+              desc: "초능력을 써서 전투 단계에서 무조건 1회 승리 가능 (사용 후 다음 턴 행동 제약)." },
+    mike:   { name: "마이크", baseHp: 3, ability: "leadership",
+              desc: "Stage당 1회, 실패를 자동으로 재도전(성공)으로 전환한다." },
+    hopper: { name: "호퍼", baseHp: 4, ability: "toughness",
+              desc: "높은 체력으로 시작하며, 싸움 성공 확률이 80%로 고정된다." },
+    joyce:  { name: "조이스", baseHp: 3, ability: "relentless",
+              desc: "아이템 칸에서 후보 2개 중 하나를 직접 골라 획득할 수 있다." },
+    dustin: { name: "더스틴", baseHp: 3, ability: "genius",
+              desc: "퀴즈 풀기에서 오답 선택지를 미리 제거한다 (4지선다 → 2지선다)." },
+    lucas:  { name: "루카스", baseHp: 3, ability: "marksman",
+              desc: "전투(싸움) 판정에 성공 확률 보너스를 받는다." },
+  };
+  const PLAYABLE = ["el", "mike", "hopper", "joyce", "dustin", "lucas"];
+
+  const ITEMS = {
+    waffle:    { name: "와플", effect: "heal", amount: 1 },
+    radio:     { name: "무전기", effect: "reveal_next", amount: 0 },
+    torch:     { name: "횃불", effect: "fight_bonus", amount: 0.2 },
+    molotov:   { name: "화염병", effect: "instant_win_fight", amount: 0 },
+    slingshot: { name: "새총", effect: "fight_bonus", amount: 0.15 },
+  };
+  const ITEM_POOL = ["waffle", "waffle", "radio", "torch", "molotov", "slingshot"];
+
+  const VILLAIN = {
+    name: "데모고르곤",
+    intro: "사방이 축축한 덩굴로 가득 찬 미로 한복판에서 벽의 포탈이 열리며 얼굴이 꽃처럼 갈라지는 괴수, 데모고르곤이 괴성을 지르며 당신을 덮쳐옵니다!",
+    bossIntro: "이곳이 시즌 보스 구역입니다. 뒤집힌 세계의 심장부에서 강화된 데모고르곤이 최후의 결전을 위해 모습을 드러냅니다!",
+    eventIntro: "이 칸 벽 너머에서 이상한 낌새가 느껴집니다. 데모고르곤의 흔적과 냄새가 남아있지만, 아직 모습은 보이지 않습니다.",
+    baseFightSuccess: 0.5,
+    bossFightPenalty: 0.15,
+  };
+
+  const QUIZ_BANK = [
+    { question: "데모고르곤이 가장 먼저 반응하며, 거리를 불문하고 귀신같이 냄새를 맡고 찾아오는 현실 세계의 자극은 무엇인가요?",
+      options: ["짙은 안개", "신선한 피", "시끄러운 음악", "전자기기의 불빛"], answerIndex: 1 },
+    { question: "데모고르곤이 인간을 감지할 때 가장 예민하게 반응하는 신체 신호는 무엇인가요?",
+      options: ["체온 변화", "심장 박동 소리", "숨소리", "그림자 움직임"], answerIndex: 1 },
+    { question: "뒤집힌 세계에서 데모고르곤을 일시적으로 물러나게 만드는 것으로 알려진 것은 무엇인가요?",
+      options: ["강한 빛과 불", "차가운 물", "큰 진동", "특정 주파수의 음악"], answerIndex: 0 },
+    { question: "데모고르곤의 서식지인 뒤집힌 세계를 가득 채우고 있는 것은 무엇인가요?",
+      options: ["떠다니는 재", "어두운 포자와 덩굴", "얼어붙은 안개", "붉은 모래"], answerIndex: 1 },
+    { question: "데모고르곤이 사냥할 때 가장 크게 의존하는 감각은?",
+      options: ["시각", "후각과 진동 감지", "청각", "미각"], answerIndex: 1 },
+    { question: "뒤집힌 세계와 현실 세계를 가르는 경계는 흔히 무엇으로 묘사되나요?",
+      options: ["얇은 막(껍질) 같은 경계", "두꺼운 콘크리트 벽", "거대한 강", "깊은 절벽"], answerIndex: 0 },
+    { question: "호킨스 연구소가 표면적으로 수행한다고 알려진 활동은 무엇인가요?",
+      options: ["에너지부 산하의 실험", "우주 탐사 프로젝트", "기상 관측 프로젝트", "군사 무기 개발"], answerIndex: 0 },
+    { question: "데모고르곤과 마주쳤을 때 몸을 숨기기 가장 위험한 장소로 알려진 곳은?",
+      options: ["활짝 트인 공터", "좁고 막다른 통로", "밝은 조명 아래", "물이 고인 구역"], answerIndex: 1 },
+  ];
+
+  const PREF_BANK = [
+    { prompt: "괴물이 반응하는 냄새나 소리를 이용해 시선을 돌린다.",
+      options: ["횃불을 흔들어 불빛으로 유인한다", "피 묻은 천 조각을 반대쪽으로 던진다", "큰 소리로 노래를 부른다", "가만히 숨을 죽인다"], answerIndex: 1 },
+    { prompt: "덩굴 사이로 데모고르곤의 시선을 다른 곳으로 돌릴 방법을 찾는다.",
+      options: ["무전기 잡음을 크게 튼다", "발소리를 죽이고 벽에 붙는다", "먹다 남은 와플 조각을 멀리 던진다", "제자리에서 크게 소리친다"], answerIndex: 2 },
+    { prompt: "데모고르곤이 코앞까지 다가와 숨소리가 느껴진다. 어떻게 반응해야 할까?",
+      options: ["숨을 참고 완전히 얼어붙는다", "천천히 뒷걸음질친다", "눈을 마주친다", "크게 기침한다"], answerIndex: 0 },
+    { prompt: "놈이 진동에 민감하게 반응하며 고개를 돌린다.",
+      options: ["제자리에서 발을 구른다", "무게를 분산시켜 조용히 이동한다", "벽을 두드려 소리를 낸다", "뛰어서 도망친다"], answerIndex: 1 },
+    { prompt: "덩굴 사이로 놈의 그림자가 스쳐 지나간다.",
+      options: ["빛이 있는 쪽으로 이동한다", "더 어두운 쪽으로 숨는다", "큰 소리로 위협한다", "제자리에서 웅크린다"], answerIndex: 0 },
+    { prompt: "놈이 코를 킁킁거리며 당신의 냄새를 맡으려 한다.",
+      options: ["와플 부스러기를 반대쪽으로 던진다", "숨을 참고 움직이지 않는다", "옷을 벗어 던진다", "큰 소리로 노래한다"], answerIndex: 0 },
+  ];
+
+  const STAGES = [
+    { id: 1, name: "연구소 외곽", gridSize: 5, encounterChance: 0.09, itemChance: 0.18, eventChance: 0.05, tutorial: true },
+    { id: 2, name: "연구소 내부", gridSize: 6, encounterChance: 0.10, itemChance: 0.16, eventChance: 0.05 },
+    { id: 3, name: "지하 통로", gridSize: 6, encounterChance: 0.11, itemChance: 0.15, eventChance: 0.06 },
+    { id: 4, name: "뒤집힌 세계 입구", gridSize: 7, encounterChance: 0.13, itemChance: 0.14, eventChance: 0.06 },
+    { id: 5, name: "시즌 보스 구역", gridSize: 5, encounterChance: 0.11, itemChance: 0.13, eventChance: 0.05, boss: true },
+  ];
+
+  const COMBAT_EFFECTS = ["fight_bonus", "instant_win_fight"];
+  const MAX_STAGE = Math.max(...STAGES.map((s) => s.id));
+
+  // Facing: 0=N 1=E 2=S 3=W. World: x = col*CELL (east+), z = row*CELL (south+).
+  const FACING_KEYS = ["N", "E", "S", "W"];
+  const FACING_DELTA = [{ dr: -1, dc: 0 }, { dr: 0, dc: 1 }, { dr: 1, dc: 0 }, { dr: 0, dc: -1 }];
+  const FACING_ANGLE = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
+  const OPPOSITE = { N: "S", S: "N", E: "W", W: "E" };
+
+  function xmur3(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return () => {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return (h ^= h >>> 16) >>> 0;
+    };
+  }
+  function mulberry32(a) {
+    return () => {
+      a |= 0;
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function makeRng(seedStr) { return mulberry32(xmur3(seedStr)()); }
+  function shuffle(arr, rng) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Grid maze generation (recursive backtracker -> a perfect maze,
+  // so every cell has exactly one simple path to every other cell --
+  // EXIT is always reachable by construction).
+  // ---------------------------------------------------------------
+  function generateGridMaze(n, rng) {
+    const cells = Array.from({ length: n }, (_, r) =>
+      Array.from({ length: n }, (_, c) => ({ r, c, walls: { N: true, E: true, S: true, W: true }, visited: false }))
+    );
+    let current = cells[0][0];
+    current.visited = true;
+    const stack = [current];
+    while (stack.length) {
+      current = stack[stack.length - 1];
+      const options = [];
+      FACING_KEYS.forEach((dir, i) => {
+        const nr = current.r + FACING_DELTA[i].dr, nc = current.c + FACING_DELTA[i].dc;
+        if (nr >= 0 && nr < n && nc >= 0 && nc < n && !cells[nr][nc].visited) options.push({ dir, nr, nc });
+      });
+      if (!options.length) { stack.pop(); continue; }
+      const pick = options[Math.floor(rng() * options.length)];
+      current.walls[pick.dir] = false;
+      cells[pick.nr][pick.nc].walls[OPPOSITE[pick.dir]] = false;
+      cells[pick.nr][pick.nc].visited = true;
+      stack.push(cells[pick.nr][pick.nc]);
+    }
+    return cells;
+  }
+
+  function bfsDistances(cells, n, startR, startC) {
+    const dist = Array.from({ length: n }, () => Array(n).fill(-1));
+    const parent = Array.from({ length: n }, () => Array(n).fill(null));
+    dist[startR][startC] = 0;
+    const queue = [[startR, startC]];
+    while (queue.length) {
+      const [r, c] = queue.shift();
+      const cell = cells[r][c];
+      FACING_KEYS.forEach((dir, i) => {
+        if (cell.walls[dir]) return;
+        const nr = r + FACING_DELTA[i].dr, nc = c + FACING_DELTA[i].dc;
+        if (nr >= 0 && nr < n && nc >= 0 && nc < n && dist[nr][nc] === -1) {
+          dist[nr][nc] = dist[r][c] + 1;
+          parent[nr][nc] = { r, c };
+          queue.push([nr, nc]);
+        }
+      });
+    }
+    return { dist, parent };
+  }
+
+  function buildStageMaze(stage, seed) {
+    const n = stage.gridSize;
+    const mazeRng = makeRng(`${seed}:${stage.id}:maze`);
+    const cells = generateGridMaze(n, mazeRng);
+    const { dist, parent } = bfsDistances(cells, n, 0, 0);
+    let exit = { r: 0, c: 0 }, best = -1;
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (dist[r][c] > best) { best = dist[r][c]; exit = { r, c }; }
+    const contentRng = makeRng(`${seed}:${stage.id}:content`);
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const cell = cells[r][c];
+      cell.content = "PATH"; cell.resolved = false; cell.discovered = false; cell.collected = false; cell.candidates = null;
+      if (r === 0 && c === 0) continue;
+      if (r === exit.r && c === exit.c) { cell.content = stage.boss ? "BOSS" : "EXIT"; continue; }
+      const roll = contentRng();
+      if (roll < stage.encounterChance) cell.content = "ENCOUNTER";
+      else if (roll < stage.encounterChance + stage.itemChance) cell.content = "ITEM";
+      else if (roll < stage.encounterChance + stage.itemChance + stage.eventChance) cell.content = "EVENT";
+    }
+    // Content is otherwise placed uniformly at random, which can strand
+    // most items in unexplored dead-end branches of a tree maze while
+    // every encounter directly on the route to the exit is unavoidable --
+    // so guarantee a few items actually sit on that route.
+    const critical = [];
+    for (let cur = exit; cur; cur = parent[cur.r][cur.c]) critical.push(cur);
+    critical.reverse();
+    const guaranteed = Math.max(1, Math.min(3, Math.floor((critical.length - 2) / 4)));
+    for (let k = 1; k <= guaranteed; k++) {
+      const idx = Math.round((k * (critical.length - 1)) / (guaranteed + 1));
+      const { r, c } = critical[idx];
+      if (cells[r][c].content !== "ENCOUNTER" && !(r === 0 && c === 0) && !(r === exit.r && c === exit.c)) {
+        cells[r][c].content = "ITEM";
+      }
+    }
+    return { cells, n, start: { r: 0, c: 0 }, exit, rng: makeRng(`${seed}:${stage.id}:runtime`) };
+  }
+
+  // ---------------------------------------------------------------
+  // GameEngine -- grid-based rules. No DOM access; UI renders whatever
+  // this returns. A cell resolves its content once, on first arrival
+  // (except ITEM, which stays pickable until collected).
+  // ---------------------------------------------------------------
+  const G = {
+    state: null, maze: null,
+
+    startNewRun(characterId, seed) {
+      const c = CHARACTERS[characterId];
+      this.state = {
+        characterId, hp: c.baseHp, maxHp: c.baseHp, inventory: {},
+        seed, stageId: 1, row: 0, col: 0, facing: 2,
+        clearedStages: [], seasonCleared: false, gameOver: false, abilityUsed: false,
+        path: [[0, 0]], moves: 0, stageStartedAt: Date.now(),
+      };
+      this._startStage(1);
+    },
+    _startStage(stageId) {
+      const stage = STAGES.find((s) => s.id === stageId);
+      this.state.stageId = stageId;
+      this.maze = buildStageMaze(stage, this.state.seed);
+      this.state.row = 0; this.state.col = 0;
+      // Face whichever direction is actually open from the start cell --
+      // a hardcoded facing could stare straight into a wall on arrival.
+      const startWalls = this.maze.cells[0][0].walls;
+      const preferred = [2, 1, 0, 3]; // S, E, N, W
+      this.state.facing = preferred.find((f) => !startWalls[FACING_KEYS[f]]);
+      if (this.state.facing === undefined) this.state.facing = 2;
+      this.state.abilityUsed = false;
+      this.state.path = [[0, 0]];
+      this.state.moves = 0;
+      this.state.stageStartedAt = Date.now();
+    },
+    character() { return CHARACTERS[this.state.characterId]; },
+    stage() { return STAGES.find((s) => s.id === this.state.stageId); },
+    currentCell() { return this.maze.cells[this.state.row][this.state.col]; },
+    isExitCell(r, c) { return r === this.maze.exit.r && c === this.maze.exit.c; },
+    usableCombatItems() {
+      return Object.keys(this.state.inventory).filter((id) => COMBAT_EFFECTS.includes(ITEMS[id].effect));
+    },
+
+    turnLeft() { this.state.facing = (this.state.facing + 3) % 4; },
+    turnRight() { this.state.facing = (this.state.facing + 1) % 4; },
+
+    tryStepForward() { return this._tryMove(this.state.facing); },
+    tryStepBackward() { return this._tryMove((this.state.facing + 2) % 4); },
+
+    _tryMove(dirIndex) {
+      const cell = this.currentCell();
+      const key = FACING_KEYS[dirIndex];
+      if (cell.walls[key]) return null;
+      const delta = FACING_DELTA[dirIndex];
+      const nr = this.state.row + delta.dr, nc = this.state.col + delta.dc;
+      this.state.row = nr; this.state.col = nc;
+      this.state.moves += 1;
+      this.state.path.push([nr, nc]);
+      const outcome = this._resolveArrival();
+      return { row: nr, col: nc, outcome };
+    },
+
+    _resolveArrival() {
+      const cell = this.currentCell();
+      if (cell.content === "PATH") return null;
+      if (cell.content === "ITEM") {
+        if (cell.discovered) return null;
+        cell.discovered = true;
+        const isJoyce = this.character().ability === "relentless";
+        cell.candidates = isJoyce ? [this._drawItem(), this._drawItem()] : [this._drawItem()];
+        return { nodeType: "ITEM", message: "무언가 반짝이는 것이 보입니다.", itemDiscovered: true };
+      }
+      if (cell.resolved) return null;
+      if (cell.content === "EXIT") {
+        cell.resolved = true;
+        const cleared = this._markStageCleared();
+        return { nodeType: "EXIT", message: "출구를 발견했습니다!", stageCleared: cleared, seasonCleared: this.state.seasonCleared };
+      }
+      // ENCOUNTER / EVENT / BOSS: reveal it, but don't force the choice
+      // menu yet -- the player walks up and presses Space to engage.
+      if (!cell.discovered) { cell.discovered = true; return { nodeType: cell.content, encounterDiscovered: true }; }
+      return null;
+    },
+    pendingEncounter() {
+      const cell = this.currentCell();
+      return (cell.content === "ENCOUNTER" || cell.content === "EVENT" || cell.content === "BOSS") && cell.discovered && !cell.resolved;
+    },
+    engageEncounter() {
+      const cell = this.currentCell();
+      const intro = cell.content === "BOSS" ? VILLAIN.bossIntro : cell.content === "EVENT" ? VILLAIN.eventIntro : VILLAIN.intro;
+      return { nodeType: cell.content, message: intro, requires: "action_choice" };
+    },
+
+    _markStageCleared() {
+      if (!this.state.clearedStages.includes(this.state.stageId)) this.state.clearedStages.push(this.state.stageId);
+      if (this.state.stageId >= MAX_STAGE) this.state.seasonCleared = true;
+      return true;
+    },
+    advanceToNextStage() {
+      if (this.state.stageId + 1 > MAX_STAGE) return false;
+      this._startStage(this.state.stageId + 1);
+      return true;
+    },
+    restartSeason() {
+      const newSeed = Math.floor(Math.random() * 1e9);
+      this.startNewRun(this.state.characterId, newSeed);
+    },
+
+    _drawItem() { return ITEM_POOL[Math.floor(this.maze.rng() * ITEM_POOL.length)]; },
+    _addItem(id) { this.state.inventory[id] = (this.state.inventory[id] || 0) + 1; },
+    _consumeItem(id) {
+      if (!this.state.inventory[id]) return false;
+      this.state.inventory[id] -= 1;
+      if (this.state.inventory[id] <= 0) delete this.state.inventory[id];
+      return true;
+    },
+
+    pendingItemChoice() {
+      const cell = this.currentCell();
+      return cell.content === "ITEM" && cell.discovered && !cell.collected ? cell.candidates : null;
+    },
+    pickupItem() {
+      const cell = this.currentCell();
+      const itemId = cell.candidates[0];
+      this._addItem(itemId);
+      cell.collected = true;
+      return { nodeType: "ITEM", message: `${ITEMS[itemId].name}을(를) 획득했습니다!` };
+    },
+    confirmItemChoice(index) {
+      const cell = this.currentCell();
+      const itemId = cell.candidates[index];
+      this._addItem(itemId);
+      cell.collected = true;
+      return { nodeType: "ITEM", message: `${ITEMS[itemId].name}을(를) 획득했습니다!` };
+    },
+    useWaffle() {
+      if (!this._consumeItem("waffle")) throw new Error("no waffle");
+      this.state.hp = Math.min(this.state.maxHp, this.state.hp + 1);
+      return `와플을 먹어 하트를 회복했습니다! (${this.state.hp}/${this.state.maxHp})`;
+    },
+    useRadio() {
+      if (!this._consumeItem("radio")) throw new Error("no radio");
+      const cell = this.currentCell();
+      return FACING_KEYS.filter((k) => !cell.walls[k]);
+    },
+
+    resolveFight(itemId) {
+      const cell = this.currentCell();
+      let base = cell.content === "BOSS" ? Math.max(0.05, VILLAIN.baseFightSuccess - VILLAIN.bossFightPenalty) : VILLAIN.baseFightSuccess;
+      let itemBonus = 0, instantWin = false;
+      if (itemId) {
+        if (!this._consumeItem(itemId)) throw new Error("item not in inventory");
+        const item = ITEMS[itemId];
+        if (item.effect === "instant_win_fight") instantWin = true;
+        else if (item.effect === "fight_bonus") itemBonus = item.amount;
+      }
+      if (instantWin) return this._finishEncounter({ success: true, message: "화염병이 폭발하며 전투가 즉시 승리로 끝났습니다!" });
+      const character = this.character();
+      let successChance = base, note = "";
+      if (character.ability === "toughness") { successChance = Math.max(successChance, 0.8); note = " (호퍼의 완력으로 성공 확률 80% 고정)"; }
+      if (character.ability === "psychic_strike" && !this.state.abilityUsed) {
+        this.state.abilityUsed = true;
+        return this._finishEncounter({ success: true, message: `${character.name}이(가) 초능력을 사용해 단숨에 제압합니다! (코피가 나며 다음 턴 행동에 제약이 걸립니다)` });
+      }
+      if (character.ability === "marksman") { successChance += 0.15; note += " (루카스의 명사수 보너스 +15%)"; }
+      successChance = Math.min(0.95, successChance + itemBonus);
+      const success = this.maze.rng() < successChance;
+      const msg = `싸움 판정 성공 확률 ${Math.round(successChance * 100)}%${note} → ${success ? "성공" : "실패"}`;
+      return this._finishEncounter({ success, message: msg });
+    },
+    startQuiz() {
+      let idx;
+      do { idx = Math.floor(this.maze.rng() * QUIZ_BANK.length); } while (QUIZ_BANK.length > 1 && idx === this._lastQuizIndex);
+      this._lastQuizIndex = idx;
+      const quiz = QUIZ_BANK[idx];
+      let options = [...quiz.options];
+      const correct = options[quiz.answerIndex];
+      if (this.character().ability === "genius") {
+        const wrong = options.filter((o) => o !== correct);
+        shuffle(wrong, this.maze.rng);
+        options = [correct, wrong[0]];
+        shuffle(options, this.maze.rng);
+      }
+      this._pendingCorrect = correct;
+      return { question: quiz.question, options };
+    },
+    answerQuiz(chosen) {
+      const correct = this._pendingCorrect;
+      const success = chosen === correct;
+      const message = success ? "정답입니다! 안전하게 지나갑니다." : `오답입니다. 정답은 '${correct}' 였습니다.`;
+      return this._finishEncounter({ success, message });
+    },
+    startPreference() {
+      let idx;
+      do { idx = Math.floor(this.maze.rng() * PREF_BANK.length); } while (PREF_BANK.length > 1 && idx === this._lastPrefIndex);
+      this._lastPrefIndex = idx;
+      const pref = PREF_BANK[idx];
+      const correct = pref.options[pref.answerIndex];
+      this._pendingCorrect = correct;
+      return { prompt: pref.prompt, options: [...pref.options] };
+    },
+    answerPreference(chosen) {
+      const correct = this._pendingCorrect;
+      const success = chosen === correct;
+      const message = success ? "빌런의 취향을 정확히 맞춰 전투 없이 지나갑니다." : "빌런의 심기를 건드렸습니다.";
+      return this._finishEncounter({ success, message });
+    },
+    _finishEncounter(resolution) {
+      const cell = this.currentCell();
+      const nodeType = cell.content;
+      const character = this.character();
+      if (character.ability === "leadership" && !resolution.success && !this.state.abilityUsed) {
+        this.state.abilityUsed = true;
+        resolution = { success: true, message: resolution.message + " → 마이크가 팀을 재정비해 재도전, 결국 성공합니다!" };
+      }
+      if (nodeType === "EVENT") {
+        cell.resolved = true;
+        return { nodeType, message: resolution.message, success: resolution.success };
+      }
+      if (resolution.success) {
+        cell.resolved = true;
+        if (nodeType === "BOSS") {
+          const cleared = this._markStageCleared();
+          return { nodeType, message: resolution.message, success: true, stageCleared: cleared, seasonCleared: this.state.seasonCleared };
+        }
+        return { nodeType, message: resolution.message, success: true };
+      }
+      this.state.hp -= 1;
+      if (this.state.hp <= 0) {
+        this.state.gameOver = true;
+        return { nodeType, message: resolution.message + " 하트가 모두 사라졌습니다... GAME OVER", success: false, gameOver: true };
+      }
+      if (nodeType === "BOSS") return { nodeType, message: resolution.message + " (보스전은 계속됩니다 — 다시 도전하세요)", success: false, retryBoss: true };
+      cell.resolved = true;
+      return { nodeType, message: resolution.message, success: false };
+    },
+  };
+
+  // ---------------------------------------------------------------
+  // Minimap (shared by the live HUD map and the stage-clear recap)
+  // ---------------------------------------------------------------
+  function wallSegments(maze) {
+    const segs = []; const n = maze.n;
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const cell = maze.cells[r][c];
+      if (cell.walls.N) segs.push([c, r, c + 1, r]);
+      if (cell.walls.W) segs.push([c, r, c, r + 1]);
+      if (r === n - 1 && cell.walls.S) segs.push([c, r + 1, c + 1, r + 1]);
+      if (c === n - 1 && cell.walls.E) segs.push([c + 1, r, c + 1, r + 1]);
+    }
+    return segs;
+  }
+  function buildMazeSVG(maze, opts) {
+    opts = opts || {};
+    const n = maze.n, U = opts.unit || 14;
+    const lines = wallSegments(maze).map(([x1, y1, x2, y2]) =>
+      `<line x1="${x1 * U}" y1="${y1 * U}" x2="${x2 * U}" y2="${y2 * U}" stroke="${opts.wallColor || "#4fd7dc"}" stroke-width="${opts.wallWidth || 1.4}" stroke-linecap="round"/>`
+    ).join("");
+    let pathHtml = "";
+    if (opts.path && opts.path.length > 1) {
+      const pts = opts.path.map(([r, c]) => `${(c + 0.5) * U},${(r + 0.5) * U}`).join(" ");
+      pathHtml = `<polyline points="${pts}" fill="none" stroke="${opts.pathColor || "#f0b656"}" stroke-width="${opts.pathWidth || 3}" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+    }
+    const s = maze.start, ex = maze.exit;
+    let markers = `<circle cx="${(s.c + 0.5) * U}" cy="${(s.r + 0.5) * U}" r="${U * 0.22}" fill="${opts.startColor || "#3b82f6"}"/>`;
+    markers += `<circle cx="${(ex.c + 0.5) * U}" cy="${(ex.r + 0.5) * U}" r="${U * 0.22}" fill="${opts.exitColor || "#e0464f"}"/>`;
+    let player = "";
+    if (opts.player) {
+      const { row, col, facing } = opts.player;
+      const cx = (col + 0.5) * U, cy = (row + 0.5) * U, rot = [0, 90, 180, 270][facing];
+      player = `<g transform="translate(${cx},${cy}) rotate(${rot})"><polygon points="0,-${U * 0.34} ${U * 0.22},${U * 0.22} -${U * 0.22},${U * 0.22}" fill="${opts.playerColor || "#f0b656"}"/></g>`;
+    }
+    return `<svg width="${n * U}" height="${n * U}" viewBox="0 0 ${n * U} ${n * U}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="${n * U}" height="${n * U}" fill="${opts.bg || "transparent"}"/>${lines}${pathHtml}${markers}${player}
+    </svg>`;
+  }
+
+  // ---------------------------------------------------------------
+  // 3D prop builders -- each item gets a real silhouette instead of a
+  // generic orb; the demogorgon keeps its flower-head shape.
+  // ---------------------------------------------------------------
+  function buildWallTexture(theme) {
+    // Deliberately NOT a grid of rectangular panels (that reads as a row
+    // of doors once tiled) -- just fine horizontal coursing + grime, so
+    // the one real door stands out unambiguously.
+    const cv = document.createElement("canvas"); cv.width = 128; cv.height = 128;
+    const ctx = cv.getContext("2d");
+    const base = new THREE.Color(theme.wall);
+    ctx.fillStyle = `#${base.getHexString()}`;
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.strokeStyle = "rgba(0,0,0,0.22)"; ctx.lineWidth = 1;
+    for (let y = 10; y < 128; y += 14) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(128, y); ctx.stroke(); }
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    for (let i = 0; i < 60; i++) ctx.fillRect(Math.random() * 128, Math.random() * 128, 4, 1.5);
+    ctx.fillStyle = "rgba(0,0,0,0.1)";
+    for (let i = 0; i < 40; i++) ctx.fillRect(Math.random() * 128, Math.random() * 128, 3, 3);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(2.2, 1.1);
+    return tex;
+  }
+  function buildDoorTexture(theme) {
+    // An unmistakably different silhouette from the plain walls (arched
+    // top, bright glowing frame) -- this is the ONLY door in the stage.
+    const cv = document.createElement("canvas"); cv.width = 128; cv.height = 128;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = `#${new THREE.Color(theme.wall).getHexString()}`;
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(20, 118); ctx.lineTo(20, 40);
+    ctx.arc(64, 40, 44, Math.PI, 0);
+    ctx.lineTo(108, 118); ctx.closePath();
+    const grd = ctx.createLinearGradient(0, 0, 0, 128);
+    grd.addColorStop(0, "#ffd699"); grd.addColorStop(1, "#8a5a22");
+    ctx.fillStyle = grd; ctx.fill();
+    ctx.lineWidth = 6; ctx.strokeStyle = "#fff2d6"; ctx.stroke();
+    ctx.restore();
+    ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(64, 20); ctx.lineTo(64, 118); ctx.stroke();
+    ctx.beginPath(); ctx.arc(72, 82, 4, 0, Math.PI * 2); ctx.fillStyle = "#3a2410"; ctx.fill();
+    return new THREE.CanvasTexture(cv);
+  }
+  function circleTexture() {
+    const size = 64;
+    const cv = document.createElement("canvas"); cv.width = size; cv.height = size;
+    const ctx = cv.getContext("2d");
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, "rgba(255,255,255,0.95)");
+    g.addColorStop(0.5, "rgba(255,255,255,0.35)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(cv);
+  }
+
+  function buildWaffleModel() {
+    const cv = document.createElement("canvas"); cv.width = 64; cv.height = 64;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = "#d99a4e"; ctx.fillRect(0, 0, 64, 64);
+    ctx.strokeStyle = "#8a5a24"; ctx.lineWidth = 4;
+    for (let i = 8; i < 64; i += 16) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 64); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(64, i); ctx.stroke();
+    }
+    const topMat = new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(cv), roughness: 0.8 });
+    const sideMat = new THREE.MeshStandardMaterial({ color: 0xb87a34, roughness: 0.85 });
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.42), [sideMat, sideMat, topMat, sideMat, sideMat, sideMat]);
+    box.position.y = 0.06;
+    const group = new THREE.Group(); group.add(box); return group;
+  }
+  function buildRadioModel() {
+    const group = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.6 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.32, 0.1), bodyMat);
+    body.position.y = 0.16; group.add(body);
+    const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.22, 6), bodyMat);
+    antenna.position.y = 0.43; group.add(antenna);
+    const grille = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.02), new THREE.MeshStandardMaterial({ color: 0x111318 }));
+    grille.position.set(0, 0.2, 0.06); group.add(grille);
+    const btn = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), new THREE.MeshStandardMaterial({ color: 0xd92a33, emissive: 0xd92a33, emissiveIntensity: 0.6 }));
+    btn.position.set(0, 0.08, 0.06); group.add(btn);
+    return group;
+  }
+  function buildSlingshotModel() {
+    const group = new THREE.Group();
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a2e, roughness: 0.8 });
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.28, 6), wood);
+    handle.position.y = 0.14; group.add(handle);
+    [-1, 1].forEach((s) => {
+      const prong = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.2, 6), wood);
+      prong.position.set(s * 0.06, 0.32, 0); prong.rotation.z = s * 0.5; group.add(prong);
+    });
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.16, 6), new THREE.MeshStandardMaterial({ color: 0x2a2a2a }));
+    band.rotation.z = Math.PI / 2; band.position.set(0, 0.4, 0.02); group.add(band);
+    return group;
+  }
+  function buildTorchModel() {
+    const group = new THREE.Group();
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x5a3a20 }));
+    handle.position.y = 0.2; group.add(handle);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.22, 8), new THREE.MeshStandardMaterial({ color: 0xff9a3c, emissive: 0xff6a1a, emissiveIntensity: 1 }));
+    flame.position.y = 0.48; group.add(flame);
+    const glow = new THREE.PointLight(0xff9a3c, 1.2, 4, 2); glow.position.y = 0.5; group.add(glow);
+    return group;
+  }
+  function buildMolotovModel() {
+    const group = new THREE.Group();
+    const glass = new THREE.MeshStandardMaterial({ color: 0x3d7a4a, transparent: true, opacity: 0.78, roughness: 0.3 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.26, 10), glass);
+    body.position.y = 0.15; group.add(body);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.12, 10), glass);
+    neck.position.y = 0.34; group.add(neck);
+    const wick = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.14, 0.02), new THREE.MeshStandardMaterial({ color: 0xe8dcb0 }));
+    wick.position.y = 0.44; group.add(wick);
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.07, 6), new THREE.MeshStandardMaterial({ color: 0xff7a2a, emissive: 0xff5a1a, emissiveIntensity: 1 }));
+    flame.position.y = 0.52; group.add(flame);
+    return group;
+  }
+  const ITEM_MODEL_BUILDERS = { waffle: buildWaffleModel, radio: buildRadioModel, slingshot: buildSlingshotModel, torch: buildTorchModel, molotov: buildMolotovModel };
+
+  // Retro pixel-art billboards (THREE.Sprite -- always faces the camera,
+  // classic Wolfenstein/Doom-style enemy) instead of a 3D primitive model.
+  function makeSpriteFromCanvas(drawFn, px, worldSize) {
+    const cv = document.createElement("canvas"); cv.width = px; cv.height = px;
+    const ctx = cv.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    drawFn(ctx, px);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+    sprite.scale.set(worldSize, worldSize, 1);
+    return sprite;
+  }
+  function drawMonsterPixels(ctx, px, isBoss) {
+    ctx.clearRect(0, 0, px, px);
+    const b = px / 16;
+    const skin = "#d7cabf", dark = "#2a1108", glow = isBoss ? "#ffc79a" : "#c98f6e", red = isBoss ? "#ff4d4d" : "#8a1414";
+    const box = (x, y, w, h, color) => { ctx.fillStyle = color; ctx.fillRect(x * b, y * b, w * b, h * b); };
+    box(6, 9, 4, 6, skin);
+    box(5, 15, 2, 1, dark); box(9, 15, 2, 1, dark);
+    box(5, 4, 6, 5, glow);
+    box(7, 2, 2, 2, red);
+    box(4, 5, 2, 2, red);
+    box(10, 5, 2, 2, red);
+    box(3, 8, 2, 2, red);
+    box(11, 8, 2, 2, red);
+    box(6, 6, 1, 1, dark); box(9, 6, 1, 1, dark);
+  }
+  function drawQuestionPixels(ctx, px) {
+    ctx.clearRect(0, 0, px, px);
+    ctx.fillStyle = "#f0b656";
+    ctx.font = `900 ${Math.floor(px * 0.8)}px monospace`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("?", px / 2, px / 2 + px * 0.03);
+  }
+  function buildMonsterSprite(isBoss) {
+    const sprite = makeSpriteFromCanvas((ctx, px) => drawMonsterPixels(ctx, px, isBoss), 32, isBoss ? 3.2 : 2.3);
+    sprite.userData.baseY = 1.3;
+    return sprite;
+  }
+  function buildQuestionSprite() {
+    const sprite = makeSpriteFromCanvas(drawQuestionPixels, 32, 1.4);
+    sprite.userData.baseY = 1.7;
+    return sprite;
+  }
+
+  // ---------------------------------------------------------------
+  // Scene3D -- grid renderer + discrete step/turn animation. Pure
+  // presentation: it never touches G directly, only positions/angles
+  // and prop groups it's told to place.
+  // ---------------------------------------------------------------
+  const Scene3D = (() => {
+    const CELL = 6, WALL_H = 3.4, WALL_T = 0.24, EYE_Y = 1.65, FLOOR_Y = -0.9;
+    const MOVE_MS = 380, TURN_MS = 220;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let renderer, scene, camera, clock;
+    let flicker = [], particles = null;
+    let encounterSprites = {}; // "r,c" -> THREE.Sprite, persists per-cell until resolved
+    let itemGroups = {}; // "r,c" -> [THREE.Group, ...], persists per-cell until collected
+    let itemCursorKey = null, itemCursor = 0;
+    let baseFog = 0.03;
+    let shockAt = -10, eventAt = -10;
+    let posX = 0, posZ = 0, angle = 0;
+    let moving = false, moveStart = 0, moveFrom = { x: 0, z: 0 }, moveTo = { x: 0, z: 0 }, moveDone = null;
+    let turning = false, turnStart = 0, turnFrom = 0, turnTo = 0;
+    let frozen = true;
+
+    const worldX = (col) => col * CELL;
+    const worldZ = (row) => row * CELL;
+    const easeOut = (t) => 1 - (1 - t) * (1 - t);
+    const forwardVec = (a) => ({ x: -Math.sin(a), z: -Math.cos(a) });
+
+    function init(canvas) {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      camera = new THREE.PerspectiveCamera(66, 1, 0.1, 200);
+      const flashlight = new THREE.PointLight(0xfff2d8, 1.0, 16, 2);
+      camera.add(flashlight);
+      scene = new THREE.Scene();
+      clock = new THREE.Clock();
+      resize();
+      window.addEventListener("resize", resize);
+      renderer.setAnimationLoop(tick);
+    }
+    function resize() {
+      if (!renderer) return;
+      const parent = renderer.domElement.parentElement;
+      const w = Math.max(1, parent.clientWidth), h = Math.max(1, parent.clientHeight);
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+    function themeFor(stageId) {
+      return stageId >= 4
+        ? { wall: 0x5a2438, floor: 0x3a1826, fog: 0x2a1220, light: 0xffab7a, accent: 0xe35fc9 }
+        : { wall: 0x27505c, floor: 0x1c3038, fog: 0x123038, light: 0xbdeef2, accent: 0x4fd7dc };
+    }
+    function clearScene() {
+      while (scene.children.length) scene.remove(scene.children[0]);
+      flicker = []; particles = null; encounterSprites = {}; itemGroups = {}; itemCursorKey = null;
+    }
+
+    function buildStage(maze, stage) {
+      clearScene();
+      scene.add(camera);
+      const theme = themeFor(stage.id);
+      const n = maze.n;
+      baseFog = 0.028 + stage.id * 0.0012;
+      scene.fog = new THREE.FogExp2(theme.fog, baseFog);
+      scene.background = new THREE.Color(theme.fog);
+      scene.add(new THREE.AmbientLight(0x6a6f85, 0.85));
+      scene.add(new THREE.HemisphereLight(theme.light, theme.wall, 0.55));
+
+      const span = n * CELL + CELL;
+      const center = (n - 1) * CELL / 2;
+      const floorMat = new THREE.MeshStandardMaterial({ color: theme.floor, roughness: 0.92 });
+      const wallTex = buildWallTexture(theme);
+      const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, color: theme.wall, roughness: 0.82, metalness: 0.06 });
+      const doorTex = buildDoorTexture(theme);
+      const doorMat = new THREE.MeshStandardMaterial({ map: doorTex, emissive: 0xf0b656, emissiveIntensity: 0.25, roughness: 0.6 });
+      const floor = new THREE.Mesh(new THREE.BoxGeometry(span, 0.2, span), floorMat);
+      floor.position.set(center, -1, center); scene.add(floor);
+      const ceil = floor.clone(); ceil.position.y = WALL_H - 0.2; scene.add(ceil);
+
+      function wallBox(cx, cz, horizontal, isDoor) {
+        const geo = horizontal
+          ? new THREE.BoxGeometry(CELL + WALL_T, WALL_H, WALL_T)
+          : new THREE.BoxGeometry(WALL_T, WALL_H, CELL + WALL_T);
+        const m = new THREE.Mesh(geo, isDoor ? doorMat : wallMat);
+        m.position.set(cx, WALL_H / 2 - 1, cz);
+        scene.add(m);
+        if (isDoor) {
+          const l = new THREE.PointLight(0xf0b656, 1.5, 9, 2);
+          l.position.set(cx, 1.6, cz);
+          scene.add(l); flicker.push(l);
+        }
+      }
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+        const cell = maze.cells[r][c];
+        const isExitCell = r === maze.exit.r && c === maze.exit.c;
+        if (cell.walls.N) wallBox(worldX(c), worldZ(r) - CELL / 2, true, isExitCell);
+        if (cell.walls.W) wallBox(worldX(c) - CELL / 2, worldZ(r), false, isExitCell);
+        if (r === n - 1 && cell.walls.S) wallBox(worldX(c), worldZ(r) + CELL / 2, true, isExitCell);
+        if (c === n - 1 && cell.walls.E) wallBox(worldX(c) + CELL / 2, worldZ(r), false, isExitCell);
+      }
+
+      // a small glow at ENCOUNTER/ITEM/EVENT cells so a discovered spot
+      // reads as "something is here" without revealing what -- the exit
+      // already gets its own door glow, so it's excluded here.
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+        const cell = maze.cells[r][c];
+        const isExitCell = r === maze.exit.r && c === maze.exit.c;
+        if (cell.content !== "PATH" && !(r === 0 && c === 0) && !isExitCell) {
+          const l = new THREE.PointLight(theme.accent, 0.5, 7, 2);
+          l.position.set(worldX(c), 2.4, worldZ(r));
+          scene.add(l); flicker.push(l);
+        }
+      }
+
+      const count = stage.id >= 4 ? 160 : 70;
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = Math.random() * span;
+        positions[i * 3 + 1] = Math.random() * 2.6;
+        positions[i * 3 + 2] = Math.random() * span;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      particles = new THREE.Points(geo, new THREE.PointsMaterial({
+        color: theme.accent, size: stage.id >= 4 ? 0.5 : 0.32, map: circleTexture(),
+        transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.75,
+      }));
+      scene.add(particles);
+    }
+
+    function setPose(row, col, facing) {
+      posX = worldX(col); posZ = worldZ(row); angle = FACING_ANGLE_LOOKUP[facing];
+      moving = false; turning = false;
+      camera.position.set(posX, EYE_Y, posZ);
+      camera.rotation.y = angle;
+    }
+    const FACING_ANGLE_LOOKUP = [0, -Math.PI / 2, Math.PI, Math.PI / 2];
+
+    function stepTo(row, col, onDone) {
+      moveFrom = { x: posX, z: posZ };
+      moveTo = { x: worldX(col), z: worldZ(row) };
+      moveStart = clock.elapsedTime; moving = true; moveDone = onDone || null;
+    }
+    function turnBy(deltaQuarterTurns) {
+      turnFrom = angle; turnTo = angle + deltaQuarterTurns * (Math.PI / 2);
+      turnStart = clock.elapsedTime; turning = true;
+    }
+
+    function anchorPoint() {
+      const f = forwardVec(angle);
+      return { x: posX + f.x * 1.3, z: posZ + f.z * 1.3 };
+    }
+    // Encounter reveals persist per-cell too: discovering one doesn't
+    // freeze movement, so the player can wander to another discovery
+    // and back without this one vanishing along the way.
+    function removeEncounterSprite(row, col) {
+      const key = `${row},${col}`;
+      if (encounterSprites[key]) { scene.remove(encounterSprites[key]); delete encounterSprites[key]; }
+    }
+    // Reveals are placed a couple of units IN FRONT of where the player
+    // is facing at the moment of discovery (not at the exact cell
+    // center, which is exactly where the camera itself ends up standing
+    // -- that made every reveal invisible, sitting right at/behind the
+    // lens). Re-approaching from a different side later may need a
+    // glance around, which is an acceptable trade for "visible the
+    // instant it's discovered."
+    function spawnMonster(row, col, facing, isBoss) {
+      removeEncounterSprite(row, col);
+      const s = buildMonsterSprite(isBoss);
+      const f = forwardVec(FACING_ANGLE_LOOKUP[facing]);
+      s.position.set(worldX(col) + f.x * 1.7, s.userData.baseY, worldZ(row) + f.z * 1.7);
+      scene.add(s); encounterSprites[`${row},${col}`] = s;
+    }
+    function spawnQuestionMark(row, col, facing) {
+      removeEncounterSprite(row, col);
+      const s = buildQuestionSprite();
+      const f = forwardVec(FACING_ANGLE_LOOKUP[facing]);
+      s.position.set(worldX(col) + f.x * 1.7, s.userData.baseY, worldZ(row) + f.z * 1.7);
+      scene.add(s); encounterSprites[`${row},${col}`] = s;
+    }
+    // Item reveals are NOT transient: discovering one doesn't freeze
+    // movement, so the player can wander off and come back later --
+    // each cell's model(s) must persist independently until collected.
+    function spawnItemModels(row, col, facing, itemIds) {
+      const key = `${row},${col}`;
+      removeItemModels(row, col);
+      const f = forwardVec(FACING_ANGLE_LOOKUP[facing]);
+      const side = forwardVec(FACING_ANGLE_LOOKUP[facing] - Math.PI / 2);
+      const baseX = worldX(col) + f.x * 1.5, baseZ = worldZ(row) + f.z * 1.5, baseY = FLOOR_Y + 0.35;
+      const groups = itemIds.map((id, i) => {
+        const g = ITEM_MODEL_BUILDERS[id] ? ITEM_MODEL_BUILDERS[id]() : buildWaffleModel();
+        const lateral = itemIds.length > 1 ? (i === 0 ? -0.5 : 0.5) : 0;
+        g.position.set(baseX + side.x * lateral, baseY, baseZ + side.z * lateral);
+        g.scale.setScalar(1.8);
+        g.userData.baseY = baseY;
+        const glow = new THREE.PointLight(0xf0b656, 1.4, 5, 2);
+        glow.position.set(0, 0.5, 0); g.add(glow);
+        scene.add(g);
+        return g;
+      });
+      itemGroups[key] = groups;
+    }
+    function removeItemModels(row, col) {
+      const key = `${row},${col}`;
+      (itemGroups[key] || []).forEach((g) => scene.remove(g));
+      delete itemGroups[key];
+      if (itemCursorKey === key) itemCursorKey = null;
+    }
+    function setItemCursor(row, col, index) { itemCursorKey = `${row},${col}`; itemCursor = index; }
+
+    function senseEvent() { if (!reduceMotion) eventAt = clock.elapsedTime; }
+    function shock() { if (!reduceMotion) shockAt = clock.elapsedTime; }
+    function setFrozen(v) { frozen = v; }
+    function isBusy() { return frozen || moving || turning; }
+
+    function tick() {
+      if (!renderer) return;
+      clock.getDelta();
+      const t = clock.elapsedTime;
+
+      if (moving) {
+        const k = Math.min(1, (t - moveStart) / (MOVE_MS / 1000));
+        const e = easeOut(k);
+        posX = moveFrom.x + (moveTo.x - moveFrom.x) * e;
+        posZ = moveFrom.z + (moveTo.z - moveFrom.z) * e;
+        if (k >= 1) { moving = false; const cb = moveDone; moveDone = null; if (cb) cb(); }
+      }
+      if (turning) {
+        const k = Math.min(1, (t - turnStart) / (TURN_MS / 1000));
+        angle = turnFrom + (turnTo - turnFrom) * easeOut(k);
+        if (k >= 1) { turning = false; angle = turnTo; }
+      }
+
+      const shockDt = t - shockAt;
+      const shockX = shockDt >= 0 && shockDt < 0.35 ? (Math.random() - 0.5) * 0.08 * (1 - shockDt / 0.35) : 0;
+      camera.position.set(posX + shockX, EYE_Y + (!reduceMotion ? Math.sin(t * (moving ? 7 : 1.4)) * (moving ? 0.035 : 0.02) : 0), posZ);
+      camera.rotation.y = angle;
+
+      if (!reduceMotion) {
+        flicker.forEach((l, i) => { l.intensity = (l.userData.base || 0.5) + Math.sin(t * 6 + i * 2) * 0.1; });
+        if (particles) particles.rotation.y = t * 0.01;
+      }
+      for (const key in encounterSprites) {
+        const s = encounterSprites[key];
+        s.position.y = (s.userData.baseY || 1.3) + Math.sin(t * 2) * 0.08;
+      }
+      for (const key in itemGroups) {
+        const groups = itemGroups[key];
+        groups.forEach((g, i) => {
+          g.position.y = (g.userData.baseY || 0) + Math.sin(t * 2 + i) * 0.08;
+          g.rotation.y = t * 0.8;
+          if (groups.length > 1) g.scale.setScalar(key === itemCursorKey && i === itemCursor ? 2.3 : 1.6);
+        });
+      }
+      if (scene.fog) {
+        const ed = t - eventAt;
+        scene.fog.density = ed >= 0 && ed < 1.6 ? baseFog + 0.02 * Math.sin((ed / 1.6) * Math.PI) : baseFog;
+      }
+      renderer.render(scene, camera);
+    }
+
+    return { init, resize, buildStage, setPose, stepTo, turnBy, spawnMonster, spawnQuestionMark, removeEncounterSprite, spawnItemModels, removeItemModels, setItemCursor, senseEvent, shock, setFrozen, isBusy };
+  })();
+
+  // ---------------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------------
+  const SAVE_KEY = "stranger_mazes_save_v2";
+  const ui = { phase: "junction", lastOutcome: null, quizOptions: null, prefOptions: null, quizQuestion: "", prefPrompt: "", itemCandidates: null };
+  let scene3DReady = false, toastTimer = null, menuIndex = 0;
+  let forwardHeld = false, backwardHeld = false, repeatTimer = null;
+
+  const screens = { title: document.getElementById("screen-title"), select: document.getElementById("screen-select"), game: document.getElementById("screen-game") };
+  const viewport = document.getElementById("viewport");
+  const statusBar = document.getElementById("status-bar");
+  const charGrid = document.getElementById("char-grid");
+  const toastEl = document.getElementById("toast");
+  const itemHintEl = document.getElementById("item-hint");
+
+  function showScreen(name) { for (const k in screens) screens[k].hidden = k !== name; }
+  function ensureScene3D() {
+    if (!scene3DReady) { Scene3D.init(document.getElementById("scene-canvas")); scene3DReady = true; }
+    else Scene3D.resize();
+  }
+  function saveLocal() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ state: G.state, cells: G.maze.cells, n: G.maze.n, start: G.maze.start, exit: G.maze.exit })); } catch (e) { /* private mode etc. */ }
+  }
+  function loadLocal() { try { const raw = localStorage.getItem(SAVE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+  function restoreFromSave(saved) {
+    G.state = saved.state;
+    G.maze = { cells: saved.cells, n: saved.n, start: saved.start, exit: saved.exit, rng: makeRng(`${saved.state.seed}:${saved.state.stageId}:runtime`) };
+  }
+  function pushLog(text) {
+    // The system log panel was removed (it collided with the action panel
+    // below the 3D view); results now surface via the toast + action-panel
+    // only. Kept as a no-op call site so nothing upstream needs to change.
+  }
+  function escapeHtml(s) { return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+  function showToast(text) {
+    toastEl.textContent = text; toastEl.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+  }
+  function flashShock() { viewport.classList.remove("shock"); void viewport.offsetWidth; viewport.classList.add("shock"); }
+
+  function renderCharGrid() {
+    charGrid.innerHTML = PLAYABLE.map((id) => {
+      const c = CHARACTERS[id];
+      return `<button class="panel char-card" data-action="select-character" data-char="${id}">
+        <span class="char-name">${c.name}</span><span class="char-hp">${"♥".repeat(c.baseHp)}</span><span class="char-desc">${c.desc}</span>
+      </button>`;
+    }).join("");
+  }
+
+  function renderStatusBar() {
+    const c = G.character(), s = G.stage();
+    const hearts = "♥".repeat(G.state.hp).split("").map(() => '<span class="heart-full">♥</span>').join("")
+      + "♡".repeat(G.state.maxHp - G.state.hp).split("").map(() => '<span class="heart-empty">♡</span>').join("");
+    const inv = Object.entries(G.state.inventory).map(([id, n]) => `<span class="chip">${ITEMS[id].name} ×${n}</span>`).join("")
+      || `<span class="chip" style="opacity:.5">인벤토리 없음</span>`;
+    const svg = buildMazeSVG(G.maze, { unit: 8, wallWidth: 1, player: { row: G.state.row, col: G.state.col, facing: G.state.facing } });
+    statusBar.innerHTML = `
+      <div class="status-left"><span class="char">${c.name}</span><span class="stage">${s.name} · ${s.id}/5</span></div>
+      <div class="hearts">${hearts}</div>
+      <div class="minimap-wrap">${svg}</div>
+      <div class="inventory">${inv}</div>
+    `;
+  }
+
+  function refreshMenuButtons() {
+    menuIndex = 0;
+    const buttons = Array.from(viewport.querySelectorAll("button"));
+    if (buttons.length) highlightMenu(buttons);
+  }
+  function highlightMenu(buttons) {
+    buttons.forEach((b, i) => b.classList.toggle("selected", i === menuIndex));
+    if (ui.phase === "item_choice") Scene3D.setItemCursor(G.state.row, G.state.col, menuIndex);
+  }
+
+  function render() {
+    renderStatusBar();
+    const st = G.state;
+    if (st.gameOver) { renderGameOver(); return; }
+    if (ui.phase === "season_clear") { renderSeasonClear(); return; }
+    if (ui.phase === "stage_clear") { renderStageClear(); return; }
+    if (ui.phase === "encounter") { renderEncounter(); return; }
+    if (ui.phase === "combat_item_choice") { renderCombatItemChoice(); return; }
+    if (ui.phase === "quiz") { renderQuiz(); return; }
+    if (ui.phase === "pref") { renderPref(); return; }
+    if (ui.phase === "item_choice") { renderItemChoice(); return; }
+    renderJunction();
+  }
+
+  function renderJunction() {
+    const hasFloorItem = !!G.pendingItemChoice();
+    const hasEncounter = G.pendingEncounter();
+    itemHintEl.textContent = hasEncounter ? "스페이스바로 맞서기" : "스페이스바로 줍기";
+    itemHintEl.classList.toggle("show", hasFloorItem || hasEncounter);
+    let html = "";
+    if (G.stage().tutorial && G.state.path.length <= 1) {
+      html += '<p class="hint-line">↑↓ 로 걷고 ← → 로 도세요 · 무언가 있으면 스페이스바로 상호작용</p>';
+    }
+    const util = Object.keys(G.state.inventory).filter((id) => id === "waffle" || id === "radio");
+    if (util.length) {
+      html += `<div class="action-grid">${util.map((id) => `<button data-action="use-util-item" data-item="${id}">${ITEMS[id].name} 사용</button>`).join("")}</div>`;
+    }
+    viewport.innerHTML = html;
+    refreshMenuButtons();
+  }
+  function renderEncounter() {
+    flashShock();
+    viewport.innerHTML = `
+      <p class="flavor">${escapeHtml(ui.lastOutcome.message)}</p>
+      <div class="action-grid">
+        <button data-action="choose-action" data-choice="fight">⚔️ 싸움 <span class="kbd">[1]</span></button>
+        <button data-action="choose-action" data-choice="quiz">🧩 퀴즈 풀기 <span class="kbd">[2]</span></button>
+        <button data-action="choose-action" data-choice="pref">🗣️ 취향 맞추기 <span class="kbd">[3]</span></button>
+      </div>`;
+    refreshMenuButtons();
+  }
+  function renderCombatItemChoice() {
+    const combat = G.usableCombatItems();
+    viewport.innerHTML = `
+      <p class="flavor">전투에 쓸 아이템이 있습니다. 사용하시겠습니까?</p>
+      <div class="action-grid">
+        ${combat.map((id, i) => `<button data-action="use-combat-item" data-item="${id}">${ITEMS[id].name} 사용 <span class="kbd">[${i + 1}]</span></button>`).join("")}
+        <button data-action="fight-plain">그냥 싸운다 <span class="kbd">[${combat.length + 1}]</span></button>
+      </div>`;
+    refreshMenuButtons();
+  }
+  function renderQuiz() {
+    viewport.innerHTML = `
+      <p class="quiz-question">💬 ${escapeHtml(ui.quizQuestion)}</p>
+      <div class="options-grid">${ui.quizOptions.map((o, i) => `<button data-action="answer-quiz" data-index="${i}">${escapeHtml(o)} <span class="kbd">[${i + 1}]</span></button>`).join("")}</div>`;
+    refreshMenuButtons();
+  }
+  function renderPref() {
+    viewport.innerHTML = `
+      <p class="pref-prompt">💬 ${escapeHtml(ui.prefPrompt)}</p>
+      <div class="options-grid">${ui.prefOptions.map((o, i) => `<button data-action="answer-pref" data-index="${i}">${escapeHtml(o)} <span class="kbd">[${i + 1}]</span></button>`).join("")}</div>`;
+    refreshMenuButtons();
+  }
+  function renderItemChoice() {
+    const cands = ui.itemCandidates;
+    viewport.innerHTML = `
+      <p class="flavor">둘 중 하나만 챙길 수 있습니다. (Space로 고르고 Enter로 확정, 또는 숫자키)</p>
+      <div class="action-grid">${cands.map((id, i) => `<button data-action="pick-item" data-index="${i}">${ITEMS[id].name} 챙기기 <span class="kbd">[${i + 1}]</span></button>`).join("")}</div>`;
+    refreshMenuButtons();
+  }
+  function renderStageClear() {
+    const o = ui.lastOutcome;
+    const elapsed = Date.now() - G.state.stageStartedAt;
+    const mm = String(Math.floor(elapsed / 60000)).padStart(2, "0");
+    const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0");
+    const score = Math.max(0, 1000 - G.state.moves * 8 - Math.floor(elapsed / 1000) * 3);
+    const svg = buildMazeSVG(G.maze, { unit: 18, path: G.state.path, wallColor: "#3a4552", pathColor: "#f0b656" });
+    const isFinal = G.state.seasonCleared;
+    viewport.innerHTML = `
+      <div class="stage-clear">
+        <span class="badge badge-success">STAGE ${G.state.stageId} CLEAR</span>
+        <h2>🎉 ${G.stage().name} 탈출 성공!</h2>
+        <div class="recap-stats"><span>시간<br><b>${mm}:${ss}</b></span><span>이동 칸수<br><b>${G.state.moves}</b></span><span>점수<br><b>${score}</b></span></div>
+        <div class="recap-map">${svg}</div>
+        <p class="result-message">${escapeHtml(o.message)}</p>
+        <button class="btn-primary" data-action="${isFinal ? "goto-season-clear" : "next-stage"}">${isFinal ? "시즌 완주 결과 보기" : "다음 스테이지로"}</button>
+      </div>`;
+    refreshMenuButtons();
+  }
+  function renderSeasonClear() {
+    viewport.innerHTML = `
+      <div class="season-clear">
+        <span class="badge badge-success">SEASON 1 CLEAR</span>
+        <h2>호킨스를 뒤집힌 세계로부터 지켜냈다!</h2>
+        <p class="result-message">${G.character().name}이(가) 시즌 1의 모든 스테이지를 클리어했습니다.</p>
+        <button class="btn-primary" data-action="goto-select">다른 캐릭터로 다시 플레이</button>
+      </div>`;
+    refreshMenuButtons();
+  }
+  function renderGameOver() {
+    const svg = buildMazeSVG(G.maze, { unit: 18, path: G.state.path, wallColor: "#3a4552", pathColor: "#9a5a5a" });
+    viewport.innerHTML = `
+      <div class="game-over">
+        <span class="badge badge-fail">GAME OVER</span>
+        <h2>하트를 모두 잃었습니다</h2>
+        <div class="recap-map">${svg}</div>
+        <button class="btn-primary" data-action="restart">시즌 1단계부터 다시 시작</button>
+      </div>`;
+    refreshMenuButtons();
+  }
+
+  // ---- outcome plumbing --------------------------------------------
+  function applyOutcome(outcome) {
+    pushLog(outcome.message);
+    saveLocal();
+    if (outcome.gameOver) { render(); return; }
+    if (outcome.stageCleared) { ui.phase = "stage_clear"; ui.lastOutcome = outcome; render(); return; }
+    if (outcome.retryBoss) { showToast(outcome.message); ui.phase = "encounter"; render(); return; }
+    showToast(outcome.message);
+    Scene3D.removeEncounterSprite(G.state.row, G.state.col);
+    Scene3D.removeItemModels(G.state.row, G.state.col);
+    Scene3D.setFrozen(false);
+    ui.phase = "junction";
+    render();
+  }
+  function handleArrival(outcome) {
+    saveLocal();
+    if (!outcome) { render(); return; }
+    if (outcome.itemDiscovered) {
+      Scene3D.spawnItemModels(G.state.row, G.state.col, G.state.facing, G.pendingItemChoice());
+      render();
+      return;
+    }
+    if (outcome.encounterDiscovered) {
+      if (outcome.nodeType === "EVENT") Scene3D.spawnQuestionMark(G.state.row, G.state.col, G.state.facing);
+      else Scene3D.spawnMonster(G.state.row, G.state.col, G.state.facing, outcome.nodeType === "BOSS");
+      render();
+      return;
+    }
+    applyOutcome(outcome); // EXIT
+  }
+  function engageEncounter() {
+    const outcome = G.engageEncounter();
+    Scene3D.shock();
+    if (outcome.nodeType === "EVENT") Scene3D.senseEvent();
+    Scene3D.setFrozen(true);
+    ui.phase = "encounter"; ui.lastOutcome = outcome;
+    saveLocal(); render();
+  }
+  function cancelEncounter() {
+    // Back off without resolving -- the monster/"?" stays put, discovered
+    // but unresolved, so pressing Space again later re-opens the choice.
+    Scene3D.setFrozen(false);
+    ui.phase = "junction";
+    render();
+  }
+
+  // ---- movement ------------------------------------------------------
+  function doForward() {
+    if (Scene3D.isBusy()) return;
+    const res = G.tryStepForward();
+    if (!res) { showToast("그 방향은 막혀 있습니다."); return; }
+    Scene3D.stepTo(res.row, res.col, () => handleArrival(res.outcome));
+  }
+  function doBackward() {
+    if (Scene3D.isBusy()) return;
+    const res = G.tryStepBackward();
+    if (!res) { showToast("그 방향은 막혀 있습니다."); return; }
+    Scene3D.stepTo(res.row, res.col, () => handleArrival(res.outcome));
+  }
+  function doTurnLeft() { if (Scene3D.isBusy()) return; G.turnLeft(); Scene3D.turnBy(1); renderStatusBar(); }
+  function doTurnRight() { if (Scene3D.isBusy()) return; G.turnRight(); Scene3D.turnBy(-1); renderStatusBar(); }
+  function trySpaceAction() {
+    if (G.pendingEncounter()) { engageEncounter(); return; }
+    const candidates = G.pendingItemChoice();
+    if (!candidates) return;
+    if (candidates.length === 1) { applyOutcome(G.pickupItem()); }
+    else { ui.phase = "item_choice"; ui.itemCandidates = candidates; Scene3D.setFrozen(true); render(); }
+  }
+  function startRepeating() { clearInterval(repeatTimer); repeatTimer = setInterval(() => { if (forwardHeld) doForward(); else if (backwardHeld) doBackward(); }, 300); }
+  function stopRepeatingIfIdle() { if (!forwardHeld && !backwardHeld) clearInterval(repeatTimer); }
+
+  // ---- input -----------------------------------------------------
+  window.addEventListener("keydown", (e) => {
+    if (screens.game.hidden) return;
+    if (ui.phase !== "junction") {
+      if (ui.phase === "encounter" && (e.code === "ArrowDown" || e.code === "KeyS")) { e.preventDefault(); cancelEncounter(); return; }
+      const buttons = Array.from(viewport.querySelectorAll("button"));
+      if (e.code === "Space") { e.preventDefault(); if (buttons.length) { menuIndex = (menuIndex + 1) % buttons.length; highlightMenu(buttons); } return; }
+      if (e.code === "Enter") { if (buttons.length && buttons[menuIndex]) { e.preventDefault(); buttons[menuIndex].click(); } return; }
+      const m = /^Digit([1-9])$/.exec(e.code);
+      if (m) { const idx = Number(m[1]) - 1; if (buttons[idx]) { e.preventDefault(); buttons[idx].click(); } }
+      return;
+    }
+    if (e.code === "ArrowUp" || e.code === "KeyW") { e.preventDefault(); if (!forwardHeld) { forwardHeld = true; doForward(); startRepeating(); } }
+    else if (e.code === "ArrowDown" || e.code === "KeyS") { e.preventDefault(); if (!backwardHeld) { backwardHeld = true; doBackward(); startRepeating(); } }
+    else if (e.code === "ArrowLeft" || e.code === "KeyA") { e.preventDefault(); doTurnLeft(); }
+    else if (e.code === "ArrowRight" || e.code === "KeyD") { e.preventDefault(); doTurnRight(); }
+    else if (e.code === "Space") { e.preventDefault(); trySpaceAction(); }
+  });
+  window.addEventListener("keyup", (e) => {
+    if (e.code === "ArrowUp" || e.code === "KeyW") { forwardHeld = false; stopRepeatingIfIdle(); }
+    else if (e.code === "ArrowDown" || e.code === "KeyS") { backwardHeld = false; stopRepeatingIfIdle(); }
+  });
+  document.getElementById("dpad").addEventListener("pointerdown", (e) => {
+    const btn = e.target.closest("[data-move]");
+    if (!btn) return;
+    const move = btn.dataset.move;
+    if (move === "forward") doForward();
+    else if (move === "backward") doBackward();
+    else if (move === "left") doTurnLeft();
+    else if (move === "right") doTurnRight();
+  });
+
+  document.getElementById("screen-title").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    if (btn.dataset.action === "goto-select") { renderCharGrid(); showScreen("select"); }
+    if (btn.dataset.action === "continue-save") {
+      const saved = loadLocal();
+      if (saved) {
+        restoreFromSave(saved);
+        ui.phase = "junction";
+        showScreen("game");
+        ensureScene3D();
+        Scene3D.buildStage(G.maze, G.stage());
+        Scene3D.setPose(G.state.row, G.state.col, G.state.facing);
+        Scene3D.setFrozen(!!G.state.gameOver);
+        pushLog(`${G.character().name}(으)로 ${G.stage().name}에서 이어합니다.`);
+        render();
+      }
+    }
+  });
+  screens.select.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action='select-character']");
+    if (!btn) return;
+    const seed = Math.floor(Math.random() * 1e9);
+    G.startNewRun(btn.dataset.char, seed);
+    ui.phase = "junction";
+    showScreen("game");
+    ensureScene3D();
+    Scene3D.buildStage(G.maze, G.stage());
+    Scene3D.setPose(0, 0, G.state.facing);
+    Scene3D.setFrozen(false);
+    saveLocal();
+    render();
+  });
+  viewport.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === "use-util-item") {
+      if (btn.dataset.item === "waffle") showToast(G.useWaffle());
+      else { const ko = { N: "북", E: "동", S: "남", W: "서" }; showToast(`무전기: 열린 방향 ${G.useRadio().map((k) => ko[k]).join(", ")}`); }
+      saveLocal(); render(); return;
+    }
+    if (action === "choose-action") {
+      const choice = btn.dataset.choice;
+      if (choice === "fight") { if (G.usableCombatItems().length) { ui.phase = "combat_item_choice"; render(); } else applyOutcome(G.resolveFight(null)); }
+      else if (choice === "quiz") { const { question, options } = G.startQuiz(); ui.phase = "quiz"; ui.quizQuestion = question; ui.quizOptions = options; render(); }
+      else { const { prompt, options } = G.startPreference(); ui.phase = "pref"; ui.prefPrompt = prompt; ui.prefOptions = options; render(); }
+      return;
+    }
+    if (action === "use-combat-item") { applyOutcome(G.resolveFight(btn.dataset.item)); return; }
+    if (action === "fight-plain") { applyOutcome(G.resolveFight(null)); return; }
+    if (action === "answer-quiz") { applyOutcome(G.answerQuiz(ui.quizOptions[Number(btn.dataset.index)])); return; }
+    if (action === "answer-pref") { applyOutcome(G.answerPreference(ui.prefOptions[Number(btn.dataset.index)])); return; }
+    if (action === "pick-item") { applyOutcome(G.confirmItemChoice(Number(btn.dataset.index))); return; }
+    if (action === "next-stage") {
+      G.advanceToNextStage();
+      Scene3D.buildStage(G.maze, G.stage());
+      Scene3D.setPose(0, 0, G.state.facing);
+      Scene3D.setFrozen(false);
+      ui.phase = "junction";
+      pushLog(`STAGE ${G.state.stageId}: ${G.stage().name} 시작.`);
+      saveLocal(); render();
+      return;
+    }
+    if (action === "goto-season-clear") { ui.phase = "season_clear"; render(); return; }
+    if (action === "restart") {
+      G.restartSeason();
+      Scene3D.buildStage(G.maze, G.stage());
+      Scene3D.setPose(0, 0, G.state.facing);
+      Scene3D.setFrozen(false);
+      ui.phase = "junction";
+      pushLog("시즌 1단계부터 다시 시작합니다.");
+      saveLocal(); render();
+      return;
+    }
+    if (action === "goto-select") { renderCharGrid(); showScreen("select"); }
+  });
+
+  const existingSave = loadLocal();
+  if (existingSave) document.getElementById("continue-row").hidden = false;
+  showScreen("title");
+})();
+</script>
