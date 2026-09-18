@@ -1,0 +1,50 @@
+{
+  "el": {
+    "name": "엘 (일레븐)",
+    "base_hp": 3,
+    "ability": "psychic_strike",
+    "description": "초능력을 써서 전투 단계에서 무조건 1회 승리 가능. 사용 후 코피가 나며 1턴간 행동 제약."
+  },
+  "mike": {
+    "name": "마이크",
+    "base_hp": 3,
+    "ability": "leadership",
+    "description": "Stage당 1회, 실패를 자동으로 재도전(성공)으로 전환한다."
+  },
+  "hopper": {
+    "name": "호퍼",
+    "base_hp": 4,
+    "ability": "toughness",
+    "description": "높은 체력으로 시작하며, 데모고르곤과의 싸움 성공 확률이 80%로 고정된다."
+  },
+  "joyce": {
+    "name": "조이스",
+    "base_hp": 3,
+    "ability": "relentless",
+    "description": "집요함 — 아이템 노드에서 후보 2개 중 하나를 직접 골라 획득할 수 있다."
+  },
+  "dustin": {
+    "name": "더스틴",
+    "base_hp": 3,
+    "ability": "genius",
+    "description": "천재성 — 퀴즈 풀기에서 오답 선택지를 미리 제거한다 (4지선다 → 2지선다)."
+  },
+  "lucas": {
+    "name": "루카스",
+    "base_hp": 3,
+    "ability": "marksman",
+    "description": "명사수 — 전투(싸움) 판정에 성공 확률 보너스를 받는다."
+  },
+  "will": {
+    "name": "윌 바이어스",
+    "base_hp": 3,
+    "ability": "hive_sense",
+    "description": "하이브 마인드 감지 — 다음 노드의 위험 여부를 미리 확인 (시즌 1 이후 확장용)."
+  },
+  "eddie": {
+    "name": "에디 먼슨",
+    "base_hp": 3,
+    "ability": "guitar_solo",
+    "description": "기타 연주로 데모뱃 계열 빌런을 전투 없이 우회 (시즌 4 확장용)."
+  }
+}

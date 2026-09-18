@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+
+# per-user save files (진행 상황) -- never commit real player progress
+saves/*.json
+!saves/.gitkeep

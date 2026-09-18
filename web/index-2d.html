@@ -1,0 +1,1006 @@
+<title>기묘한 미로</title>
+<meta name="description" content="호킨스 연구소를 탈출하는 시즌1 텍스트/버튼 기반 미로 RPG. 캐릭터를 고르고 갈림길에서 방향을 선택해 데모고르곤을 피해 출구까지 가세요.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Nanum+Gothic+Coding:wght@400;700&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /*
+    기묘한 미로 (Stranger Mazes) -- a single deliberately-dark "CRT console"
+    world: Hawkins Lab case-file report (display face) + a terminal readout
+    (mono UI chrome) + an analog VHS narrative voice (serif body). This is a
+    horror/arcade identity meant to look the same regardless of OS theme, so
+    colors are declared explicitly rather than forked per prefers-color-scheme.
+  */
+  :root {
+    --bg: #0a0b0d;
+    --panel: #14161b;
+    --panel-2: #1b1e25;
+    --edge: #2a2e37;
+    --ink: #e9e6dd;
+    --muted: #8b909c;
+    --red: #c81d25;
+    --red-deep: #4d0e12;
+    --red-glow: #ff3b3b;
+    --cyan: #35c7cc;
+    --amber: #e3a63f;
+    --good: #4caf6d;
+    --font-display: 'Black Han Sans', 'Nanum Gothic', sans-serif;
+    --font-mono: 'Nanum Gothic Coding', 'Courier New', monospace;
+    --font-body: 'Gowun Batang', 'Nanum Myeongjo', serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    margin: 0;
+    padding: 24px 16px 48px;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ambient CRT scanlines + a slow red vignette pulse, evoking a rift nearby */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 2px,
+      transparent 4px
+    );
+    mix-blend-mode: overlay;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: -10%;
+    pointer-events: none;
+    z-index: 4;
+    background: radial-gradient(ellipse at 50% 0%, rgba(200, 29, 37, 0.16), transparent 60%);
+    animation: pulse-glow 7s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body::after { animation: none; }
+  }
+
+  .app {
+    max-width: 720px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .masthead { text-align: center; margin-bottom: 20px; }
+  .masthead h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 7vw, 3rem);
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    text-shadow: 0 0 18px rgba(200, 29, 37, 0.55), 0 0 2px var(--red-glow);
+    margin: 0;
+    text-wrap: balance;
+  }
+  .masthead .sub {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.35em;
+    color: var(--cyan);
+    margin-top: 6px;
+  }
+
+  .screen { display: flex; flex-direction: column; gap: 18px; }
+
+  .panel {
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .flavor {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+
+  .lede {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--muted);
+    text-align: center;
+    max-width: 52ch;
+    margin: 0 auto;
+  }
+
+  button {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid var(--edge);
+    background: var(--panel-2);
+    color: var(--ink);
+    padding: 14px 16px;
+    transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
+  }
+  button:hover { border-color: var(--cyan); background: #202430; }
+  button:active { transform: translateY(1px); }
+  button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  .btn-primary {
+    background: var(--red-deep);
+    border-color: var(--red);
+    color: #fff2f2;
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { background: var(--red); }
+
+  .center { display: flex; justify-content: center; }
+
+  .direction-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .direction-grid button {
+    padding: 22px 8px;
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+  }
+  @media (max-width: 420px) {
+    .direction-grid { grid-template-columns: 1fr; }
+  }
+
+  .action-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  @media (min-width: 480px) {
+    .action-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .util-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .util-row button {
+    font-size: 0.82rem;
+    padding: 8px 12px;
+    color: var(--amber);
+    border-color: rgba(227, 166, 63, 0.4);
+  }
+
+  .peek-box {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--cyan);
+    background: rgba(53, 199, 204, 0.08);
+    border: 1px dashed rgba(53, 199, 204, 0.4);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 14px;
+  }
+
+  /* --- character select --- */
+  .char-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 560px) {
+    .char-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .char-card {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+  }
+  .char-card .char-name {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+  }
+  .char-card .char-hp {
+    font-family: var(--font-mono);
+    color: var(--red-glow);
+    font-size: 0.85rem;
+  }
+  .char-card .char-desc {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* --- status bar --- */
+  .status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 18px;
+    font-family: var(--font-mono);
+    padding: 12px 16px;
+  }
+  .status-left { display: flex; flex-direction: column; gap: 2px; }
+  .status-left .char { color: var(--cyan); font-size: 0.85rem; }
+  .status-left .stage { font-size: 1rem; }
+  .status-left .stage .dot-track { color: var(--muted); font-size: 0.8rem; }
+  .hearts { font-size: 1.2rem; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
+  .heart-full { color: var(--red); }
+  .heart-empty { color: #3a2426; }
+  .inventory { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    background: rgba(227, 166, 63, 0.1);
+    border: 1px solid rgba(227, 166, 63, 0.35);
+    color: var(--amber);
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
+
+  /* --- event log --- */
+  .log-panel {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--muted);
+    max-height: 150px;
+    overflow-y: auto;
+  }
+  .log-panel .log-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+  .log-line { padding: 3px 0; border-bottom: 1px dotted var(--edge); }
+  .log-line:last-child { border-bottom: none; }
+
+  .quiz-question, .pref-prompt {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+  .result-message {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+  .badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .badge-success { background: rgba(76, 175, 109, 0.15); color: var(--good); border: 1px solid rgba(76,175,109,0.4); }
+  .badge-fail { background: rgba(200, 29, 37, 0.15); color: var(--red-glow); border: 1px solid rgba(200,29,37,0.4); }
+
+  .stage-clear, .game-over, .season-clear {
+    text-align: center;
+  }
+  .stage-clear h2, .game-over h2, .season-clear h2 {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    margin: 0 0 10px;
+  }
+  .stage-clear h2 { color: var(--cyan); }
+  .game-over h2 { color: var(--red-glow); }
+  .season-clear h2 { color: var(--amber); }
+
+  .shock {
+    animation: shock-flash 0.4s ease-out;
+  }
+  @keyframes shock-flash {
+    0% { box-shadow: 0 0 0 4px rgba(200, 29, 37, 0.9), 0 10px 30px rgba(0,0,0,0.4); }
+    100% { box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shock { animation: none; }
+  }
+
+  .footnote {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+</style>
+
+<div class="app">
+  <div class="masthead">
+    <h1>기묘한 미로</h1>
+    <span class="sub">STRANGER MAZES · SEASON 1</span>
+  </div>
+
+  <main id="screen-title" class="screen">
+    <div class="panel">
+      <p class="lede">호킨스 연구소 지하, 뒤집힌 세계로 이어지는 미로에 갇혔다.
+      좌·직진·우 갈림길 중 하나를 골라 출구까지 살아서 나가야 한다.
+      가는 길에 데모고르곤과 마주치면 <b>싸움</b>, <b>퀴즈 풀기</b>, <b>취향 맞추기</b> 중 하나로 위기를 넘겨라.</p>
+    </div>
+    <div class="center">
+      <button class="btn-primary" data-action="goto-select">새 게임 시작</button>
+    </div>
+    <div id="continue-row" class="center" hidden>
+      <button data-action="continue-save">이어하기 (이 브라우저에 저장된 기록)</button>
+    </div>
+  </main>
+
+  <main id="screen-select" class="screen" hidden>
+    <div class="panel">
+      <p class="flavor" style="margin:0 0 4px">플레이할 캐릭터를 고르세요. 캐릭터마다 실제 플레이에 영향을 주는 고유 능력이 있습니다.</p>
+    </div>
+    <div class="char-grid" id="char-grid"></div>
+  </main>
+
+  <main id="screen-game" class="screen" hidden>
+    <div class="panel status-bar" id="status-bar"></div>
+    <div class="panel" id="viewport"></div>
+    <div class="panel log-panel">
+      <div class="log-title">SYSTEM LOG</div>
+      <div id="log"></div>
+    </div>
+  </main>
+
+  <p class="footnote">시즌1 · 호킨스 연구소 &amp; 뒤집힌 세계 · 진행 상황은 이 브라우저에 자동 저장됩니다</p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // Content (mirrors src/stranger_mazes/data/*.json from the Python
+  // engine 1:1, so the same rules apply -- this page is the web/2D
+  // button-UI step from the design doc's stage-3 instruction, reusing
+  // the exact same season 1 ruleset, just ported to run client-side).
+  // ---------------------------------------------------------------
+  const CHARACTERS = {
+    el:     { name: "엘 (일레븐)", baseHp: 3, ability: "psychic_strike",
+              desc: "초능력을 써서 전투 단계에서 무조건 1회 승리 가능 (사용 후 다음 턴 행동 제약)." },
+    mike:   { name: "마이크", baseHp: 3, ability: "leadership",
+              desc: "Stage당 1회, 실패를 자동으로 재도전(성공)으로 전환한다." },
+    hopper: { name: "호퍼", baseHp: 4, ability: "toughness",
+              desc: "높은 체력으로 시작하며, 싸움 성공 확률이 80%로 고정된다." },
+    joyce:  { name: "조이스", baseHp: 3, ability: "relentless",
+              desc: "아이템 노드에서 후보 2개 중 하나를 직접 골라 획득할 수 있다." },
+    dustin: { name: "더스틴", baseHp: 3, ability: "genius",
+              desc: "퀴즈 풀기에서 오답 선택지를 미리 제거한다 (4지선다 → 2지선다)." },
+    lucas:  { name: "루카스", baseHp: 3, ability: "marksman",
+              desc: "전투(싸움) 판정에 성공 확률 보너스를 받는다." },
+  };
+  const PLAYABLE = ["el", "mike", "hopper", "joyce", "dustin", "lucas"];
+
+  const ITEMS = {
+    waffle:    { name: "와플", effect: "heal", amount: 1 },
+    radio:     { name: "무전기", effect: "reveal_next", amount: 0 },
+    torch:     { name: "횃불", effect: "fight_bonus", amount: 0.2 },
+    molotov:   { name: "화염병", effect: "instant_win_fight", amount: 0 },
+    slingshot: { name: "새총", effect: "fight_bonus", amount: 0.15 },
+  };
+  const ITEM_POOL = ["waffle", "waffle", "radio", "torch", "molotov", "slingshot"];
+
+  const VILLAIN = {
+    name: "데모고르곤",
+    intro: "사방이 축축한 덩굴로 가득 찬 3D 미로의 막다른 길에 다다랐습니다. 벽의 포탈이 열리며 얼굴이 꽃처럼 갈라지는 괴수, 데모고르곤이 괴성을 지르며 당신을 덮쳐옵니다!",
+    bossIntro: "이곳이 시즌 보스 구역입니다. 뒤집힌 세계의 심장부에서 강화된 데모고르곤이 최후의 결전을 위해 모습을 드러냅니다!",
+    eventIntro: "미로 벽 너머에서 이상한 낌새가 느껴집니다. 데모고르곤의 것으로 보이는 흔적과 냄새가 남아있지만, 아직 모습은 보이지 않습니다.",
+    baseFightSuccess: 0.5,
+    bossFightPenalty: 0.15,
+  };
+
+  const QUIZ_BANK = [
+    { question: "데모고르곤이 가장 먼저 반응하며, 거리를 불문하고 귀신같이 냄새를 맡고 찾아오는 현실 세계의 자극은 무엇인가요?",
+      options: ["짙은 안개", "신선한 피", "시끄러운 음악", "전자기기의 불빛"], answerIndex: 1 },
+    { question: "데모고르곤이 인간을 감지할 때 가장 예민하게 반응하는 신체 신호는 무엇인가요?",
+      options: ["체온 변화", "심장 박동 소리", "숨소리", "그림자 움직임"], answerIndex: 1 },
+    { question: "뒤집힌 세계에서 데모고르곤을 일시적으로 물러나게 만드는 것으로 알려진 것은 무엇인가요?",
+      options: ["강한 빛과 불", "차가운 물", "큰 진동", "특정 주파수의 음악"], answerIndex: 0 },
+  ];
+
+  const PREF_BANK = [
+    { prompt: "괴물이 반응하는 냄새나 소리를 이용해 시선을 돌린다.",
+      options: ["횃불을 흔들어 불빛으로 유인한다", "피 묻은 천 조각을 반대쪽으로 던진다", "큰 소리로 노래를 부른다", "가만히 숨을 죽인다"], answerIndex: 1 },
+    { prompt: "덩굴 사이로 데모고르곤의 시선을 다른 곳으로 돌릴 방법을 찾는다.",
+      options: ["무전기 잡음을 크게 튼다", "발소리를 죽이고 벽에 붙는다", "먹다 남은 와플 조각을 멀리 던진다", "제자리에서 크게 소리친다"], answerIndex: 2 },
+  ];
+
+  const STAGES = [
+    { id: 1, name: "연구소 외곽", length: 3, encounterChance: 0.4, itemChance: 0.35, tutorial: true },
+    { id: 2, name: "연구소 내부", length: 4, encounterChance: 0.5, itemChance: 0.3 },
+    { id: 3, name: "지하 통로", length: 5, encounterChance: 0.55, itemChance: 0.25 },
+    { id: 4, name: "뒤집힌 세계 입구", length: 5, encounterChance: 0.65, itemChance: 0.2 },
+    { id: 5, name: "시즌 보스 구역", length: 3, encounterChance: 0.5, itemChance: 0.2, boss: true },
+  ];
+
+  const DIRECTIONS = ["좌", "직진", "우"];
+  const DIRECTION_BIAS = {
+    좌: { encounter: 0.7, item: 1.3 },
+    직진: { encounter: 1.0, item: 1.0 },
+    우: { encounter: 1.35, item: 0.7 },
+  };
+  const NODE_LABELS = { PATH: "조용한 길", ITEM: "무언가 반짝임", ENCOUNTER: "위험한 기척",
+                        EVENT: "이상한 낌새", BOSS: "강력한 기운", EXIT: "출구" };
+  const COMBAT_EFFECTS = ["fight_bonus", "instant_win_fight"];
+  const MAX_STAGE = Math.max(...STAGES.map((s) => s.id));
+
+  // ---------------------------------------------------------------
+  // Deterministic seeded RNG (Math.random isn't seedable): xmur3 hash
+  // -> mulberry32 stream, mirroring the Python engine's seed-based,
+  // reproducible maze generation.
+  // ---------------------------------------------------------------
+  function xmur3(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    return () => {
+      h = Math.imul(h ^ (h >>> 16), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return (h ^= h >>> 16) >>> 0;
+    };
+  }
+  function mulberry32(a) {
+    return () => {
+      a |= 0;
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function makeRng(seedStr) { return mulberry32(xmur3(seedStr)()); }
+
+  function generateMaze(stage, seed) {
+    const rng = makeRng(`${seed}:${stage.id}`);
+    const junctions = [];
+    for (let i = 0; i < stage.length; i++) {
+      const isLast = i === stage.length - 1;
+      const options = {};
+      for (const dir of DIRECTIONS) {
+        if (isLast) { options[dir] = stage.boss ? "BOSS" : "EXIT"; continue; }
+        const bias = DIRECTION_BIAS[dir];
+        const encP = Math.min(0.9, stage.encounterChance * bias.encounter);
+        const itemP = Math.min(0.9 - encP, stage.itemChance * bias.item);
+        const eventP = 0.1;
+        const roll = rng();
+        options[dir] = roll < encP ? "ENCOUNTER"
+          : roll < encP + itemP ? "ITEM"
+          : roll < encP + itemP + eventP ? "EVENT"
+          : "PATH";
+      }
+      junctions.push(options);
+    }
+    return junctions;
+  }
+
+  function shuffle(arr, rng) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // GameEngine -- pure state + rules, no DOM access. UI code below
+  // only ever calls these methods and renders what comes back.
+  // ---------------------------------------------------------------
+  const G = {
+    state: null,
+    pending: { node: null, itemChoices: null, quiz: null, pref: null },
+
+    startNewRun(characterId, seed) {
+      const c = CHARACTERS[characterId];
+      this.state = {
+        characterId, hp: c.baseHp, maxHp: c.baseHp, inventory: {},
+        seed, stageId: 1, position: 0, clearedStages: [], seasonCleared: false,
+        gameOver: false, abilityUsed: false,
+      };
+      this._rng = makeRng(`${seed}:runtime`);
+      this._startStage(1);
+    },
+    _startStage(stageId) {
+      this.state.stageId = stageId;
+      const stage = STAGES.find((s) => s.id === stageId);
+      this.maze = generateMaze(stage, this.state.seed);
+      this.state.position = 0;
+      this.state.abilityUsed = false;
+      this._clearPending();
+    },
+    _clearPending() { this.pending = { node: null, itemChoices: null, quiz: null, pref: null }; },
+    character() { return CHARACTERS[this.state.characterId]; },
+    stage() { return STAGES.find((s) => s.id === this.state.stageId); },
+    currentJunction() { return this.maze[this.state.position]; },
+    usableCombatItems() {
+      return Object.keys(this.state.inventory).filter((id) => COMBAT_EFFECTS.includes(ITEMS[id].effect));
+    },
+
+    advance(direction) {
+      const junction = this.currentJunction();
+      const nodeType = junction[direction];
+      this.pending.node = nodeType;
+      if (nodeType === "PATH") { this._advancePosition(); return { nodeType, message: "조용한 통로를 지나갑니다." }; }
+      if (nodeType === "ITEM") return this._handleItemNode();
+      if (nodeType === "EXIT") {
+        this._advancePosition();
+        const cleared = this._markStageCleared();
+        return { nodeType, message: "출구를 발견했습니다!", stageCleared: cleared, seasonCleared: this.state.seasonCleared };
+      }
+      const intro = nodeType === "BOSS" ? VILLAIN.bossIntro : nodeType === "EVENT" ? VILLAIN.eventIntro : VILLAIN.intro;
+      return { nodeType, message: intro, requires: "action_choice" };
+    },
+    _advancePosition() { this.state.position += 1; this._clearPending(); },
+    _markStageCleared() {
+      if (this.state.position < this.maze.length) return false;
+      if (!this.state.clearedStages.includes(this.state.stageId)) this.state.clearedStages.push(this.state.stageId);
+      if (this.state.stageId >= MAX_STAGE) this.state.seasonCleared = true;
+      return true;
+    },
+    advanceToNextStage() {
+      if (this.state.stageId + 1 > MAX_STAGE) return false;
+      this._startStage(this.state.stageId + 1);
+      return true;
+    },
+    restartSeason() {
+      const newSeed = Math.floor(Math.random() * 1e9);
+      this.startNewRun(this.state.characterId, newSeed);
+    },
+
+    _drawItem() { return ITEM_POOL[Math.floor(this._rng() * ITEM_POOL.length)]; },
+    _addItem(id) { this.state.inventory[id] = (this.state.inventory[id] || 0) + 1; },
+    _consumeItem(id) {
+      if (!this.state.inventory[id]) return false;
+      this.state.inventory[id] -= 1;
+      if (this.state.inventory[id] <= 0) delete this.state.inventory[id];
+      return true;
+    },
+    _handleItemNode() {
+      if (this.character().ability === "relentless") {
+        const candidates = [this._drawItem(), this._drawItem()];
+        this.pending.itemChoices = candidates;
+        const names = candidates.map((c) => ITEMS[c].name).join(", ");
+        return { nodeType: "ITEM", message: `조이스가 집요하게 뒤져 두 가지를 찾아냈습니다: ${names}`, requires: "item_choice" };
+      }
+      const itemId = this._drawItem();
+      this._addItem(itemId);
+      this._advancePosition();
+      return { nodeType: "ITEM", message: `${ITEMS[itemId].name}을(를) 획득했습니다!` };
+    },
+    chooseItem(itemId) {
+      this._addItem(itemId);
+      this._advancePosition();
+      return { nodeType: "ITEM", message: `${ITEMS[itemId].name}을(를) 획득했습니다!` };
+    },
+    useWaffle() {
+      if (!this._consumeItem("waffle")) throw new Error("no waffle");
+      this.state.hp = Math.min(this.state.maxHp, this.state.hp + 1);
+      return `와플을 먹어 하트를 회복했습니다! (${this.state.hp}/${this.state.maxHp})`;
+    },
+    useRadio() {
+      if (!this._consumeItem("radio")) throw new Error("no radio");
+      return this.currentJunction();
+    },
+
+    resolveFight(itemId) {
+      const nodeType = this.pending.node;
+      let base = nodeType === "BOSS" ? Math.max(0.05, VILLAIN.baseFightSuccess - VILLAIN.bossFightPenalty) : VILLAIN.baseFightSuccess;
+      let itemBonus = 0, instantWin = false;
+      if (itemId) {
+        if (!this._consumeItem(itemId)) throw new Error("item not in inventory");
+        const item = ITEMS[itemId];
+        if (item.effect === "instant_win_fight") instantWin = true;
+        else if (item.effect === "fight_bonus") itemBonus = item.amount;
+      }
+      if (instantWin) return this._finishEncounter({ success: true, message: "화염병이 폭발하며 전투가 즉시 승리로 끝났습니다!" });
+
+      const character = this.character();
+      let successChance = base, note = "";
+      if (character.ability === "toughness") { successChance = Math.max(successChance, 0.8); note = " (호퍼의 완력으로 성공 확률 80% 고정)"; }
+      if (character.ability === "psychic_strike" && !this.state.abilityUsed) {
+        this.state.abilityUsed = true;
+        return this._finishEncounter({ success: true, message: `${character.name}이(가) 초능력을 사용해 단숨에 제압합니다! (코피가 나며 다음 턴 행동에 제약이 걸립니다)` });
+      }
+      if (character.ability === "marksman") { successChance += 0.15; note += " (루카스의 명사수 보너스 +15%)"; }
+      successChance = Math.min(0.95, successChance + itemBonus);
+      const success = this._rng() < successChance;
+      const msg = `싸움 판정 성공 확률 ${Math.round(successChance * 100)}%${note} → ${success ? "성공" : "실패"}`;
+      return this._finishEncounter({ success, message: msg });
+    },
+    startQuiz() {
+      const quiz = QUIZ_BANK[Math.floor(this._rng() * QUIZ_BANK.length)];
+      let options = [...quiz.options];
+      const correct = options[quiz.answerIndex];
+      if (this.character().ability === "genius") {
+        const wrong = options.filter((o) => o !== correct);
+        shuffle(wrong, this._rng);
+        options = [correct, wrong[0]];
+        shuffle(options, this._rng);
+      }
+      this.pending.quiz = { correct };
+      return { question: quiz.question, options };
+    },
+    answerQuiz(chosen) {
+      const correct = this.pending.quiz.correct;
+      const success = chosen === correct;
+      const message = success ? "정답입니다! 안전하게 다음 갈림길로 향합니다." : `오답입니다. 정답은 '${correct}' 였습니다.`;
+      return this._finishEncounter({ success, message });
+    },
+    startPreference() {
+      const pref = PREF_BANK[Math.floor(this._rng() * PREF_BANK.length)];
+      const correct = pref.options[pref.answerIndex];
+      this.pending.pref = { correct };
+      return { prompt: pref.prompt, options: [...pref.options] };
+    },
+    answerPreference(chosen) {
+      const correct = this.pending.pref.correct;
+      const success = chosen === correct;
+      const message = success ? "빌런의 취향을 정확히 맞춰 전투 없이 지나갑니다." : "빌런의 심기를 건드렸습니다.";
+      return this._finishEncounter({ success, message });
+    },
+    _finishEncounter(resolution) {
+      const nodeType = this.pending.node;
+      const character = this.character();
+      if (character.ability === "leadership" && !resolution.success && !this.state.abilityUsed) {
+        this.state.abilityUsed = true;
+        resolution = { success: true, message: resolution.message + " → 마이크가 팀을 재정비해 재도전, 결국 성공합니다!" };
+      }
+      if (nodeType === "EVENT") {
+        this._advancePosition();
+        return { nodeType, message: resolution.message, success: resolution.success };
+      }
+      if (resolution.success) {
+        if (nodeType === "BOSS") {
+          this._advancePosition();
+          const cleared = this._markStageCleared();
+          return { nodeType, message: resolution.message, success: true, stageCleared: cleared, seasonCleared: this.state.seasonCleared };
+        }
+        this._advancePosition();
+        return { nodeType, message: resolution.message, success: true };
+      }
+      this.state.hp -= 1;
+      if (this.state.hp <= 0) {
+        this.state.gameOver = true;
+        return { nodeType, message: resolution.message + " 하트가 모두 사라졌습니다... GAME OVER", success: false, gameOver: true };
+      }
+      if (nodeType === "BOSS") {
+        this._clearPending();
+        return { nodeType, message: resolution.message + " (보스전은 계속됩니다 — 다시 도전하세요)", success: false };
+      }
+      this._advancePosition();
+      return { nodeType, message: resolution.message, success: false };
+    },
+
+    toSave() { return JSON.parse(JSON.stringify(this.state)); },
+    fromSave(saved) {
+      this.state = saved;
+      this._rng = makeRng(`${saved.seed}:runtime`);
+      const stage = STAGES.find((s) => s.id === saved.stageId);
+      this.maze = generateMaze(stage, saved.seed);
+      this._clearPending();
+    },
+  };
+
+  // ---------------------------------------------------------------
+  // UI
+  // ---------------------------------------------------------------
+  const SAVE_KEY = "stranger_mazes_save_v1";
+  const ui = { phase: "junction", lastOutcome: null, quizOptions: null, prefOptions: null };
+  const logLines = [];
+
+  const screens = {
+    title: document.getElementById("screen-title"),
+    select: document.getElementById("screen-select"),
+    game: document.getElementById("screen-game"),
+  };
+  const viewport = document.getElementById("viewport");
+  const statusBar = document.getElementById("status-bar");
+  const logEl = document.getElementById("log");
+  const charGrid = document.getElementById("char-grid");
+
+  function showScreen(name) {
+    for (const key in screens) screens[key].hidden = key !== name;
+  }
+
+  function saveLocal() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(G.toSave())); } catch (e) { /* private mode etc. */ }
+  }
+  function loadLocal() {
+    try { const raw = localStorage.getItem(SAVE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+  }
+  function clearLocal() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* ignore */ }
+  }
+
+  function pushLog(text) {
+    logLines.push(text);
+    if (logLines.length > 60) logLines.shift();
+    logEl.innerHTML = logLines.map((l) => `<div class="log-line">${escapeHtml(l)}</div>`).join("");
+    logEl.parentElement.scrollTop = logEl.parentElement.scrollHeight;
+  }
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function renderCharGrid() {
+    charGrid.innerHTML = PLAYABLE.map((id) => {
+      const c = CHARACTERS[id];
+      return `<button class="panel char-card" data-action="select-character" data-char="${id}">
+        <span class="char-name">${c.name}</span>
+        <span class="char-hp">${"♥".repeat(c.baseHp)}</span>
+        <span class="char-desc">${c.desc}</span>
+      </button>`;
+    }).join("");
+  }
+
+  function renderStatusBar() {
+    const c = G.character();
+    const s = G.stage();
+    const hearts = "♥".repeat(G.state.hp).split("").map(() => '<span class="heart-full">♥</span>').join("")
+      + "♡".repeat(G.state.maxHp - G.state.hp).split("").map(() => '<span class="heart-empty">♡</span>').join("");
+    const inv = Object.entries(G.state.inventory)
+      .map(([id, n]) => `<span class="chip">${ITEMS[id].name} ×${n}</span>`).join("") || `<span class="chip" style="opacity:.5">인벤토리 없음</span>`;
+    statusBar.innerHTML = `
+      <div class="status-left">
+        <span class="char">${c.name}</span>
+        <span class="stage">${s.name} <span class="dot-track">(${Math.min(G.state.position + 1, s.length)}/${s.length})</span></span>
+      </div>
+      <div class="hearts">${hearts}</div>
+      <div class="inventory">${inv}</div>
+    `;
+  }
+
+  function flashShock() {
+    viewport.classList.remove("shock");
+    void viewport.offsetWidth;
+    viewport.classList.add("shock");
+  }
+
+  function render() {
+    renderStatusBar();
+    const st = G.state;
+
+    if (st.gameOver) {
+      viewport.innerHTML = `
+        <div class="game-over">
+          <span class="badge badge-fail">GAME OVER</span>
+          <h2>하트를 모두 잃었습니다</h2>
+          <p class="result-message">${escapeHtml(ui.lastOutcome ? ui.lastOutcome.message.replace(" 하트가 모두 사라졌습니다... GAME OVER", "") : "")}</p>
+          <button class="btn-primary" data-action="restart">시즌 1단계부터 다시 시작</button>
+        </div>`;
+      return;
+    }
+    if (st.seasonCleared) {
+      viewport.innerHTML = `
+        <div class="season-clear">
+          <span class="badge badge-success">SEASON 1 CLEAR</span>
+          <h2>호킨스를 뒤집힌 세계로부터 지켜냈다!</h2>
+          <p class="result-message">${G.character().name}이(가) 시즌 1의 모든 스테이지를 클리어했습니다.</p>
+          <button class="btn-primary" data-action="goto-select">다른 캐릭터로 다시 플레이</button>
+        </div>`;
+      return;
+    }
+
+    if (ui.phase === "junction") {
+      const junction = G.currentJunction();
+      const junctionItems = Object.keys(st.inventory).filter((id) => id === "waffle" || id === "radio");
+      let peekHtml = "";
+      if (ui.peek) {
+        peekHtml = `<div class="peek-box">무전기 신호: ${DIRECTIONS.map((d) => `${d}=${NODE_LABELS[ui.peek[d]]}`).join(" · ")}</div>`;
+      }
+      viewport.innerHTML = `
+        <p class="flavor">${G.stage().tutorial && st.position === 0 ? "미로 입구입니다. 아직 앞은 보이지 않습니다 — 감으로 방향을 고르세요." : "다음 갈림길에 다다랐습니다."}</p>
+        <div class="direction-grid">
+          ${DIRECTIONS.map((d) => `<button data-action="dir" data-dir="${d}">${d}</button>`).join("")}
+        </div>
+        ${peekHtml}
+        ${junctionItems.length ? `<div class="util-row">${junctionItems.map((id) => `<button data-action="use-junction-item" data-item="${id}">${ITEMS[id].name} 사용</button>`).join("")}</div>` : ""}
+      `;
+      return;
+    }
+
+    if (ui.phase === "encounter") {
+      flashShock();
+      viewport.innerHTML = `
+        <p class="flavor">${escapeHtml(ui.lastOutcome.message)}</p>
+        <div class="action-grid">
+          <button data-action="choose-action" data-choice="fight">⚔️ 싸움</button>
+          <button data-action="choose-action" data-choice="quiz">🧩 퀴즈 풀기</button>
+          <button data-action="choose-action" data-choice="pref">🗣️ 취향 맞추기</button>
+        </div>
+      `;
+      return;
+    }
+
+    if (ui.phase === "combat_item_choice") {
+      const combatItems = G.usableCombatItems();
+      viewport.innerHTML = `
+        <p class="flavor">전투에 쓸 아이템이 있습니다. 사용하시겠습니까?</p>
+        <div class="action-grid">
+          ${combatItems.map((id) => `<button data-action="use-combat-item" data-item="${id}">${ITEMS[id].name} 사용</button>`).join("")}
+          <button data-action="fight-plain">그냥 싸운다</button>
+        </div>
+      `;
+      return;
+    }
+
+    if (ui.phase === "quiz") {
+      viewport.innerHTML = `
+        <p class="quiz-question">💬 ${escapeHtml(ui.quizQuestion)}</p>
+        <div class="options-grid">
+          ${ui.quizOptions.map((o, i) => `<button data-action="answer-quiz" data-index="${i}">${escapeHtml(o)}</button>`).join("")}
+        </div>
+      `;
+      return;
+    }
+
+    if (ui.phase === "pref") {
+      viewport.innerHTML = `
+        <p class="pref-prompt">💬 ${escapeHtml(ui.prefPrompt)}</p>
+        <div class="options-grid">
+          ${ui.prefOptions.map((o, i) => `<button data-action="answer-pref" data-index="${i}">${escapeHtml(o)}</button>`).join("")}
+        </div>
+      `;
+      return;
+    }
+
+    if (ui.phase === "item_choice") {
+      viewport.innerHTML = `
+        <p class="flavor">${escapeHtml(ui.lastOutcome.message)}</p>
+        <div class="action-grid">
+          ${G.pending.itemChoices.map((id) => `<button data-action="pick-item" data-item="${id}">${ITEMS[id].name} 챙기기</button>`).join("")}
+        </div>
+      `;
+      return;
+    }
+
+    if (ui.phase === "message") {
+      const o = ui.lastOutcome;
+      if (o.stageCleared) {
+        viewport.innerHTML = `
+          <div class="stage-clear">
+            <span class="badge badge-success">STAGE ${st.stageId} CLEAR</span>
+            <h2>${G.stage().name} 돌파!</h2>
+            <p class="result-message">${escapeHtml(o.message)}</p>
+            <button class="btn-primary" data-action="next-stage">다음 스테이지로</button>
+          </div>`;
+        return;
+      }
+      const badge = o.success === true ? '<span class="badge badge-success">성공</span>'
+        : o.success === false ? '<span class="badge badge-fail">실패</span>' : "";
+      viewport.innerHTML = `
+        ${badge}
+        <p class="result-message">${escapeHtml(o.message)}</p>
+        <div class="center"><button class="btn-primary" data-action="continue">계속</button></div>
+      `;
+    }
+  }
+
+  // ---- event wiring --------------------------------------------------
+  function goToMessage(outcome) {
+    ui.phase = "message";
+    ui.lastOutcome = outcome;
+    pushLog(outcome.message);
+    saveLocal();
+    render();
+  }
+
+  document.getElementById("screen-title").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    if (btn.dataset.action === "goto-select") { renderCharGrid(); showScreen("select"); }
+    if (btn.dataset.action === "continue-save") {
+      const saved = loadLocal();
+      if (saved) {
+        G.fromSave(saved);
+        ui.phase = G.state.gameOver ? "message" : "junction";
+        ui.lastOutcome = G.state.gameOver ? { message: "" } : null;
+        showScreen("game");
+        pushLog(`${G.character().name}(으)로 ${G.stage().name}에서 이어합니다.`);
+        render();
+      }
+    }
+  });
+
+  screens.select.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action='select-character']");
+    if (!btn) return;
+    const characterId = btn.dataset.char;
+    const seed = Math.floor(Math.random() * 1e9);
+    G.startNewRun(characterId, seed);
+    ui.phase = "junction";
+    ui.peek = null;
+    logLines.length = 0;
+    pushLog(`${G.character().name}(으)로 시즌 1을 시작합니다.`);
+    showScreen("game");
+    saveLocal();
+    render();
+  });
+
+  viewport.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+
+    if (action === "dir") {
+      ui.peek = null;
+      const outcome = G.advance(btn.dataset.dir);
+      if (outcome.requires === "item_choice") {
+        ui.phase = "item_choice"; ui.lastOutcome = outcome; pushLog(outcome.message); saveLocal(); render();
+      } else if (outcome.requires === "action_choice") {
+        ui.phase = "encounter"; ui.lastOutcome = outcome; saveLocal(); render();
+      } else {
+        goToMessage(outcome);
+      }
+      return;
+    }
+    if (action === "use-junction-item") {
+      if (btn.dataset.item === "waffle") { pushLog(G.useWaffle()); }
+      else { ui.peek = G.useRadio(); pushLog("무전기로 다음 갈림길을 살펴봅니다."); }
+      saveLocal();
+      render();
+      return;
+    }
+    if (action === "choose-action") {
+      const choice = btn.dataset.choice;
+      if (choice === "fight") {
+        if (G.usableCombatItems().length) { ui.phase = "combat_item_choice"; render(); }
+        else goToMessage(G.resolveFight(null));
+      } else if (choice === "quiz") {
+        const { question, options } = G.startQuiz();
+        ui.phase = "quiz"; ui.quizQuestion = question; ui.quizOptions = options; render();
+      } else {
+        const { prompt, options } = G.startPreference();
+        ui.phase = "pref"; ui.prefPrompt = prompt; ui.prefOptions = options; render();
+      }
+      return;
+    }
+    if (action === "use-combat-item") { goToMessage(G.resolveFight(btn.dataset.item)); return; }
+    if (action === "fight-plain") { goToMessage(G.resolveFight(null)); return; }
+    if (action === "answer-quiz") { goToMessage(G.answerQuiz(ui.quizOptions[Number(btn.dataset.index)])); return; }
+    if (action === "answer-pref") { goToMessage(G.answerPreference(ui.prefOptions[Number(btn.dataset.index)])); return; }
+    if (action === "pick-item") { goToMessage(G.chooseItem(btn.dataset.item)); return; }
+
+    if (action === "continue") { ui.phase = "junction"; render(); return; }
+    if (action === "next-stage") {
+      const hasNext = G.advanceToNextStage();
+      ui.phase = "junction";
+      pushLog(hasNext ? `STAGE ${G.state.stageId}: ${G.stage().name} 시작.` : "시즌 클리어!");
+      saveLocal();
+      render();
+      return;
+    }
+    if (action === "restart") {
+      G.restartSeason();
+      ui.phase = "junction";
+      pushLog("시즌 1단계부터 다시 시작합니다.");
+      saveLocal();
+      render();
+      return;
+    }
+    if (action === "goto-select") { renderCharGrid(); showScreen("select"); }
+  });
+
+  // ---- boot ------------------------------------------------------
+  const existingSave = loadLocal();
+  if (existingSave) document.getElementById("continue-row").hidden = false;
+  showScreen("title");
+})();
+</script>

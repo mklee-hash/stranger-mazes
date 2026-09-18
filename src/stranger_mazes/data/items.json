@@ -1,0 +1,32 @@
+{
+  "waffle": {
+    "name": "와플",
+    "effect": "heal",
+    "amount": 1,
+    "use_prompt": "와플을 먹어 하트를 1개 회복합니다."
+  },
+  "radio": {
+    "name": "무전기",
+    "effect": "reveal_next",
+    "amount": 0,
+    "use_prompt": "무전기로 다음 갈림길의 위험도를 미리 확인합니다."
+  },
+  "torch": {
+    "name": "횃불",
+    "effect": "fight_bonus",
+    "amount": 0.2,
+    "use_prompt": "횃불을 들고 맞서 싸워 전투 성공 확률이 올라갑니다."
+  },
+  "molotov": {
+    "name": "화염병",
+    "effect": "instant_win_fight",
+    "amount": 0,
+    "use_prompt": "화염병을 던져 전투를 즉시 승리로 끝냅니다."
+  },
+  "slingshot": {
+    "name": "새총",
+    "effect": "fight_bonus",
+    "amount": 0.15,
+    "use_prompt": "새총으로 견제 사격을 하여 전투 성공 확률이 올라갑니다."
+  }
+}

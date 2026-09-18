@@ -1,0 +1,61 @@
+{
+  "season": 1,
+  "map_name": "호킨스 연구소 & 뒤집힌 세계",
+  "playable_characters": ["el", "mike", "hopper", "joyce", "dustin", "lucas"],
+  "villain": {
+    "id": "demogorgon",
+    "name": "데모고르곤",
+    "intro": "사방이 축축한 덩굴로 가득 찬 3D 미로의 막다른 길에 다다랐습니다. 벽의 포탈이 열리며 얼굴이 꽃처럼 갈라지는 괴수, 데모고르곤이 괴성을 지르며 당신을 덮쳐옵니다!",
+    "boss_intro": "이곳이 시즌 보스 구역입니다. 뒤집힌 세계의 심장부에서 강화된 데모고르곤이 최후의 결전을 위해 모습을 드러냅니다!",
+    "event_intro": "미로 벽 너머에서 이상한 낌새가 느껴집니다. 데모고르곤의 것으로 보이는 흔적과 냄새가 남아있지만, 아직 모습은 보이지 않습니다.",
+    "base_fight_success": 0.5,
+    "boss_fight_penalty": 0.15
+  },
+  "item_pool": ["waffle", "waffle", "radio", "torch", "molotov", "slingshot"],
+  "quiz_bank": [
+    {
+      "question": "데모고르곤이 가장 먼저 반응하며, 거리를 불문하고 귀신같이 냄새를 맡고 찾아오는 현실 세계의 자극은 무엇인가요?",
+      "options": ["짙은 안개", "신선한 피", "시끄러운 음악", "전자기기의 불빛"],
+      "answer_index": 1
+    },
+    {
+      "question": "데모고르곤이 인간을 감지할 때 가장 예민하게 반응하는 신체 신호는 무엇인가요?",
+      "options": ["체온 변화", "심장 박동 소리", "숨소리", "그림자 움직임"],
+      "answer_index": 1
+    },
+    {
+      "question": "뒤집힌 세계에서 데모고르곤을 일시적으로 물러나게 만드는 것으로 알려진 것은 무엇인가요?",
+      "options": ["강한 빛과 불", "차가운 물", "큰 진동", "특정 주파수의 음악"],
+      "answer_index": 0
+    }
+  ],
+  "preference_bank": [
+    {
+      "prompt": "괴물이 반응하는 냄새나 소리를 이용해 시선을 돌린다.",
+      "options": [
+        "횃불을 흔들어 불빛으로 유인한다",
+        "피 묻은 천 조각을 반대쪽으로 던진다",
+        "큰 소리로 노래를 부른다",
+        "가만히 숨을 죽인다"
+      ],
+      "answer_index": 1
+    },
+    {
+      "prompt": "덩굴 사이로 데모고르곤의 시선을 다른 곳으로 돌릴 방법을 찾는다.",
+      "options": [
+        "무전기 잡음을 크게 튼다",
+        "발소리를 죽이고 벽에 붙는다",
+        "먹다 남은 와플 조각을 멀리 던진다",
+        "제자리에서 크게 소리친다"
+      ],
+      "answer_index": 2
+    }
+  ],
+  "stages": [
+    { "id": 1, "name": "연구소 외곽", "length": 3, "encounter_chance": 0.4, "item_chance": 0.35, "tutorial": true },
+    { "id": 2, "name": "연구소 내부", "length": 4, "encounter_chance": 0.5, "item_chance": 0.3 },
+    { "id": 3, "name": "지하 통로", "length": 5, "encounter_chance": 0.55, "item_chance": 0.25 },
+    { "id": 4, "name": "뒤집힌 세계 입구", "length": 5, "encounter_chance": 0.65, "item_chance": 0.2 },
+    { "id": 5, "name": "시즌 보스 구역", "length": 3, "encounter_chance": 0.5, "item_chance": 0.2, "boss": true }
+  ]
+}
