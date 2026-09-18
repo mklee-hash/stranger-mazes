@@ -3,6 +3,13 @@
 3D 1인칭 미로 탈출 + 턴제 인카운터(전투/퀴즈/취향 맞추기) RPG.
 기획 원본: `../기묘한 미로 설계.pptx` (v1), `기묘한_미로_게임설계_v2.pptx` (v2, Codex 구현용 — 이 프로젝트가 따르는 스펙).
 
+## 🔗 플레이하기
+
+**https://mklee-hash.github.io/stranger-mazes/** — Claude 계정/링크 없이 누구나 바로 접속 가능
+(GitHub Pages, `docs/index.html`을 서빙. `web/index.html`을 수정한 뒤 `docs/index.html`에도
+복사하고 커밋·푸시해야 배포본에 반영된다 — Pages는 `main` 브랜치의 `/docs` 폴더를 그대로 서빙하며
+별도 빌드 단계가 없다).
+
 ## 개발 순서 (설계 문서 기준)
 
 1. ✅ **Python 게임 엔진** — 시즌1을 텍스트(CLI)로 완주 가능하게 구현
