@@ -51,22 +51,23 @@
   .masthead .sub { display: block; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.3em; color: var(--cyan); margin-top: 6px; }
   .screen { display: flex; flex-direction: column; gap: 18px; }
   .panel { background: linear-gradient(180deg, var(--panel), var(--panel-2)); border: 1px solid var(--edge); border-radius: 10px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-  .flavor { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0 0 10px; }
-  .lede { font-family: var(--font-body); font-size: 1.05rem; line-height: 1.85; color: var(--muted); text-align: center; max-width: 54ch; margin: 0 auto; }
+  .flavor { font-family: var(--font-body); font-size: 1.1rem; line-height: 1.6; color: var(--ink); margin: 0 0 10px; }
+  .lede { font-family: var(--font-body); font-size: 1.15rem; line-height: 1.85; color: var(--muted); text-align: center; max-width: 54ch; margin: 0 auto; }
   button {
-    font-family: var(--font-ui); font-weight: 700; font-size: clamp(1rem, 3.4vw, 1.15rem); cursor: pointer; border-radius: 10px;
-    border: 1.5px solid rgba(79,215,220,.35); background: var(--panel-2); color: var(--ink); padding: 16px 18px; min-height: 52px;
+    font-family: var(--font-ui); font-weight: 700; font-size: clamp(1.05rem, 3.8vw, 1.25rem); cursor: pointer; border-radius: 12px;
+    border: 2px solid rgba(79,215,220,.4); background: var(--panel-2); color: var(--ink); padding: 18px 20px; min-height: 60px;
     transition: border-color .15s, transform .1s, background .15s;
   }
   button:hover { border-color: var(--cyan); background: #2c3140; }
   button:active { transform: translateY(1px); }
   button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
   button.selected { border-color: var(--amber); background: rgba(240,182,86,.2); box-shadow: 0 0 0 2px var(--amber); }
-  .btn-primary { background: var(--red-deep); border-color: var(--red); color: #fff2f2; font-family: var(--font-display); letter-spacing: .02em; font-weight: 400; font-size: clamp(1.1rem, 4vw, 1.3rem); }
+  .btn-primary { background: var(--red-deep); border-color: var(--red); color: #fff2f2; font-family: var(--font-display); letter-spacing: .02em; font-weight: 400; font-size: clamp(1.2rem, 4.6vw, 1.45rem); }
   .btn-primary:hover { background: var(--red); }
   .center { display: flex; justify-content: center; }
-  .action-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  @media (min-width: 480px) { .action-grid { grid-template-columns: repeat(3, 1fr); } }
+  /* Always one full-width column -- three narrow columns are hard to
+     tap accurately on a phone, and stacked buttons cost desktop nothing. */
+  .action-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
   .choice-fight { border-color: rgba(217,42,51,.55) !important; }
   .choice-fight:hover, .choice-fight.selected { border-color: var(--red-glow) !important; background: rgba(217,42,51,.14) !important; }
   .choice-quiz { border-color: rgba(79,215,220,.55) !important; }
@@ -76,27 +77,44 @@
   .kbd { font-family: var(--font-mono); font-size: .82rem; opacity: .7; }
   .char-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
   @media (min-width: 560px) { .char-grid { grid-template-columns: 1fr 1fr; } }
-  .char-card { text-align: left; display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
-  .char-card .char-name { font-family: var(--font-display); font-size: 1.2rem; }
-  .char-card .char-hp { font-family: var(--font-mono); color: var(--red-glow); font-size: 0.85rem; }
-  .char-card .char-desc { font-family: var(--font-body); font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+  .char-card { text-align: left; display: flex; flex-direction: column; gap: 8px; align-items: stretch; min-height: 64px; }
+  .char-card .char-name { font-family: var(--font-display); font-size: 1.4rem; }
+  .char-card .char-hp { font-family: var(--font-mono); color: var(--red-glow); font-size: 1rem; }
+  .char-card .char-desc { font-family: var(--font-body); font-size: 1.02rem; color: var(--muted); line-height: 1.55; }
   .game-stage { position: relative; width: 100%; height: min(66vh,580px); min-height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid var(--edge); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
   #scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 14px 20px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
   .status-left { display: flex; flex-direction: column; gap: 2px; }
-  .status-left .char { color: var(--cyan); font-size: 1rem; font-family: var(--font-ui); font-weight: 600; }
-  .status-left .stage { font-size: 1.1rem; font-family: var(--font-ui); font-weight: 700; }
-  .hearts { font-size: 1.6rem; letter-spacing: 3px; }
+  .status-left .char { color: var(--cyan); font-size: 1.12rem; font-family: var(--font-ui); font-weight: 600; }
+  .status-left .stage { font-size: 1.25rem; font-family: var(--font-ui); font-weight: 700; }
+  .hearts { font-size: 2rem; letter-spacing: 3px; }
   .heart-full { color: var(--red-glow); text-shadow: 0 0 10px rgba(255,91,82,.8); }
   .heart-empty { color: #4a2f30; }
   .inventory { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; order: 3; }
-  .chip { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; background: rgba(240,182,86,.18); border: 1.5px solid rgba(240,182,86,.5); color: var(--amber); border-radius: 999px; padding: 6px 14px; }
+  .chip { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; background: rgba(240,182,86,.18); border: 1.5px solid rgba(240,182,86,.5); color: var(--amber); border-radius: 999px; padding: 7px 16px; }
   .minimap-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
   .minimap-wrap svg { background: rgba(6,7,10,.6); border: 1.5px solid rgba(79,215,220,.4); border-radius: 8px; }
-  .item-hint { position: absolute; left: 50%; bottom: 108px; transform: translateX(-50%); z-index: 2; font-family: var(--font-ui); font-weight: 700; font-size: 1.05rem; color: var(--amber); background: rgba(10,8,13,.82); border: 1.5px solid rgba(240,182,86,.6); border-radius: 999px; padding: 8px 18px; opacity: 0; transition: opacity .2s; pointer-events: none; }
-  .item-hint.show { opacity: 1; }
-  .dpad { position: absolute; left: 12px; bottom: 12px; z-index: 3; display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(2, 58px); gap: 6px; }
-  .dpad-btn { padding: 0; font-size: 1.6rem; line-height: 1; background: rgba(10,8,13,.68); border-color: rgba(79,215,220,.5); backdrop-filter: blur(2px); }
+  .dpad { position: absolute; left: 8px; bottom: 8px; z-index: 3; display: grid; grid-template-columns: repeat(3, clamp(50px, 15vw, 72px)); grid-template-rows: repeat(2, clamp(50px, 15vw, 72px)); gap: 6px; }
+  .dpad-btn { padding: 0; font-size: clamp(1.4rem, 5vw, 2rem); line-height: 1; background: rgba(10,8,13,.72); border-color: rgba(79,215,220,.55); backdrop-filter: blur(2px); min-height: 0; }
+  /* The primary touch action -- picking up an item / engaging a
+     discovered encounter. There is no spacebar on a phone, so this IS
+     the only way to trigger that on mobile; mirrors the D-pad on the
+     opposite corner and glows to be impossible to miss. */
+  .interact-btn {
+    position: absolute; right: 8px; bottom: 8px; z-index: 3;
+    width: clamp(64px, 20vw, 92px); height: clamp(64px, 20vw, 92px); border-radius: 50%;
+    font-family: var(--font-display); font-size: clamp(.95rem, 4vw, 1.15rem); line-height: 1.15; text-align: center;
+    background: radial-gradient(circle at 35% 30%, #ffdca0, var(--amber) 70%);
+    color: #2a1a06; border: 3px solid #fff2d6; min-height: 0; padding: 4px;
+    box-shadow: 0 0 0 0 rgba(240,182,86,.6), 0 6px 18px rgba(0,0,0,.5);
+    animation: interact-pulse 1.6s ease-in-out infinite;
+  }
+  .interact-btn:hover { background: radial-gradient(circle at 35% 30%, #ffe6b8, var(--amber) 70%); }
+  @keyframes interact-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(240,182,86,.55), 0 6px 18px rgba(0,0,0,.5); }
+    50% { box-shadow: 0 0 0 14px rgba(240,182,86,0), 0 6px 18px rgba(0,0,0,.5); }
+  }
+  @media (prefers-reduced-motion: reduce) { .interact-btn { animation: none; } }
   .dpad-up { grid-column: 2; grid-row: 1; }
   .dpad-left { grid-column: 1; grid-row: 2; }
   .dpad-right { grid-column: 3; grid-row: 2; }
@@ -150,7 +168,6 @@
     <div class="game-stage">
       <canvas id="scene-canvas"></canvas>
       <div class="hud-status" id="status-bar"></div>
-      <div class="item-hint" id="item-hint">스페이스바로 상호작용</div>
       <div class="toast" id="toast"></div>
       <div class="dpad" id="dpad">
         <button class="dpad-btn dpad-up" data-move="forward" aria-label="전진">▲</button>
@@ -158,6 +175,7 @@
         <button class="dpad-btn dpad-right" data-move="right" aria-label="오른쪽으로 회전">▶</button>
         <button class="dpad-btn dpad-down" data-move="backward" aria-label="후진">▼</button>
       </div>
+      <button class="interact-btn" id="interact-btn" type="button" hidden>줍기</button>
     </div>
     <div class="panel action-panel" id="viewport"></div>
   </main>
@@ -923,15 +941,22 @@
           scene.add(l); flicker.push(l);
         }
       }
+      // The exit cell is usually a dead end (up to 3 closed walls) -- mark
+      // only ONE of them as the goal door (first found, N/W/S/E priority),
+      // or every closed wall would show a door and look like 3 separate
+      // exits, all of which correctly report "blocked" since none of them
+      // are real openings.
+      const exitCell = maze.cells[maze.exit.r][maze.exit.c];
+      const exitDoorFace = exitCell.walls.N ? "+Z" : exitCell.walls.W ? "+X" : exitCell.walls.S ? "-Z" : exitCell.walls.E ? "-X" : null;
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
         const cell = maze.cells[r][c];
         const isExitCell = r === maze.exit.r && c === maze.exit.c;
         // The door always faces INTO the exit cell -- e.g. a wall on the
         // exit cell's north edge is seen from the exit side facing +Z.
-        if (cell.walls.N) wallBox(worldX(c), worldZ(r) - CELL / 2, true, isExitCell ? "+Z" : null);
-        if (cell.walls.W) wallBox(worldX(c) - CELL / 2, worldZ(r), false, isExitCell ? "+X" : null);
-        if (r === n - 1 && cell.walls.S) wallBox(worldX(c), worldZ(r) + CELL / 2, true, isExitCell ? "-Z" : null);
-        if (c === n - 1 && cell.walls.E) wallBox(worldX(c) + CELL / 2, worldZ(r), false, isExitCell ? "-X" : null);
+        if (cell.walls.N) wallBox(worldX(c), worldZ(r) - CELL / 2, true, isExitCell && exitDoorFace === "+Z" ? "+Z" : null);
+        if (cell.walls.W) wallBox(worldX(c) - CELL / 2, worldZ(r), false, isExitCell && exitDoorFace === "+X" ? "+X" : null);
+        if (r === n - 1 && cell.walls.S) wallBox(worldX(c), worldZ(r) + CELL / 2, true, isExitCell && exitDoorFace === "-Z" ? "-Z" : null);
+        if (c === n - 1 && cell.walls.E) wallBox(worldX(c) + CELL / 2, worldZ(r), false, isExitCell && exitDoorFace === "-X" ? "-X" : null);
       }
 
       // a small glow at ENCOUNTER/ITEM/EVENT cells so a discovered spot
@@ -1110,7 +1135,7 @@
   const statusBar = document.getElementById("status-bar");
   const charGrid = document.getElementById("char-grid");
   const toastEl = document.getElementById("toast");
-  const itemHintEl = document.getElementById("item-hint");
+  const interactBtn = document.getElementById("interact-btn");
 
   function showScreen(name) { for (const k in screens) screens[k].hidden = k !== name; }
   function ensureScene3D() {
@@ -1152,7 +1177,7 @@
       + "♡".repeat(G.state.maxHp - G.state.hp).split("").map(() => '<span class="heart-empty">♡</span>').join("");
     const inv = Object.entries(G.state.inventory).map(([id, n]) => `<span class="chip">${ITEMS[id].icon} ${ITEMS[id].name} ×${n}</span>`).join("")
       || `<span class="chip" style="opacity:.5">인벤토리 없음</span>`;
-    const svg = buildMazeSVG(G.maze, { unit: 13, wallWidth: 1.8, player: { row: G.state.row, col: G.state.col, facing: G.state.facing } });
+    const svg = buildMazeSVG(G.maze, { unit: 15, wallWidth: 2, player: { row: G.state.row, col: G.state.col, facing: G.state.facing } });
     statusBar.innerHTML = `
       <div class="status-left"><span class="char">${c.name}</span><span class="stage">${s.name} · ${s.id}/5</span></div>
       <div class="hearts">${hearts}</div>
@@ -1188,11 +1213,11 @@
   function renderJunction() {
     const hasFloorItem = !!G.pendingItemChoice();
     const hasEncounter = G.pendingEncounter();
-    itemHintEl.textContent = hasEncounter ? "스페이스바로 맞서기" : "스페이스바로 줍기";
-    itemHintEl.classList.toggle("show", hasFloorItem || hasEncounter);
+    interactBtn.hidden = !(hasFloorItem || hasEncounter);
+    interactBtn.textContent = hasEncounter ? "맞서기" : "줍기";
     let html = "";
     if (G.stage().tutorial && G.state.path.length <= 1) {
-      html += '<p class="hint-line">↑↓ 로 걷고 ← → 로 도세요 · 무언가 있으면 스페이스바로 상호작용</p>';
+      html += '<p class="hint-line">↑↓ 로 걷고 ← → 로 도세요 · 무언가 있으면 오른쪽 아래 버튼으로 상호작용</p>';
     }
     const util = Object.keys(G.state.inventory).filter((id) => id === "waffle" || id === "radio");
     if (util.length) {
@@ -1384,6 +1409,7 @@
     else if (move === "left") doTurnLeft();
     else if (move === "right") doTurnRight();
   });
+  interactBtn.addEventListener("click", () => { if (ui.phase === "junction") trySpaceAction(); });
 
   document.getElementById("screen-title").addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
