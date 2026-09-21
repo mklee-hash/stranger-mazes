@@ -54,20 +54,26 @@
   .flavor { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink); margin: 0 0 10px; }
   .lede { font-family: var(--font-body); font-size: 1.05rem; line-height: 1.85; color: var(--muted); text-align: center; max-width: 54ch; margin: 0 auto; }
   button {
-    font-family: var(--font-ui); font-weight: 600; font-size: 0.95rem; cursor: pointer; border-radius: 8px;
-    border: 1px solid var(--edge); background: var(--panel-2); color: var(--ink); padding: 14px 16px;
+    font-family: var(--font-ui); font-weight: 700; font-size: clamp(1rem, 3.4vw, 1.15rem); cursor: pointer; border-radius: 10px;
+    border: 1.5px solid rgba(79,215,220,.35); background: var(--panel-2); color: var(--ink); padding: 16px 18px; min-height: 52px;
     transition: border-color .15s, transform .1s, background .15s;
   }
   button:hover { border-color: var(--cyan); background: #2c3140; }
   button:active { transform: translateY(1px); }
   button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-  button.selected { border-color: var(--amber); background: rgba(240,182,86,.16); box-shadow: 0 0 0 1px var(--amber); }
-  .btn-primary { background: var(--red-deep); border-color: var(--red); color: #fff2f2; font-family: var(--font-display); letter-spacing: .02em; font-weight: 400; font-size: 1.05rem; }
+  button.selected { border-color: var(--amber); background: rgba(240,182,86,.2); box-shadow: 0 0 0 2px var(--amber); }
+  .btn-primary { background: var(--red-deep); border-color: var(--red); color: #fff2f2; font-family: var(--font-display); letter-spacing: .02em; font-weight: 400; font-size: clamp(1.1rem, 4vw, 1.3rem); }
   .btn-primary:hover { background: var(--red); }
   .center { display: flex; justify-content: center; }
-  .action-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  .action-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
   @media (min-width: 480px) { .action-grid { grid-template-columns: repeat(3, 1fr); } }
-  .kbd { font-family: var(--font-mono); font-size: .72rem; opacity: .65; }
+  .choice-fight { border-color: rgba(217,42,51,.55) !important; }
+  .choice-fight:hover, .choice-fight.selected { border-color: var(--red-glow) !important; background: rgba(217,42,51,.14) !important; }
+  .choice-quiz { border-color: rgba(79,215,220,.55) !important; }
+  .choice-quiz:hover, .choice-quiz.selected { border-color: var(--cyan) !important; background: rgba(79,215,220,.14) !important; }
+  .choice-pref { border-color: rgba(227,95,201,.55) !important; }
+  .choice-pref:hover, .choice-pref.selected { border-color: var(--magenta) !important; background: rgba(227,95,201,.14) !important; }
+  .kbd { font-family: var(--font-mono); font-size: .82rem; opacity: .7; }
   .char-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
   @media (min-width: 560px) { .char-grid { grid-template-columns: 1fr 1fr; } }
   .char-card { text-align: left; display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
@@ -78,24 +84,24 @@
   #scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 14px 20px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
   .status-left { display: flex; flex-direction: column; gap: 2px; }
-  .status-left .char { color: var(--cyan); font-size: .82rem; font-family: var(--font-ui); }
-  .status-left .stage { font-size: .93rem; font-family: var(--font-ui); font-weight: 600; }
-  .hearts { font-size: 1.15rem; letter-spacing: 2px; }
-  .heart-full { color: var(--red-glow); text-shadow: 0 0 8px rgba(255,91,82,.7); }
+  .status-left .char { color: var(--cyan); font-size: 1rem; font-family: var(--font-ui); font-weight: 600; }
+  .status-left .stage { font-size: 1.1rem; font-family: var(--font-ui); font-weight: 700; }
+  .hearts { font-size: 1.6rem; letter-spacing: 3px; }
+  .heart-full { color: var(--red-glow); text-shadow: 0 0 10px rgba(255,91,82,.8); }
   .heart-empty { color: #4a2f30; }
-  .inventory { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; order: 3; }
-  .chip { font-family: var(--font-mono); font-size: .74rem; background: rgba(240,182,86,.14); border: 1px solid rgba(240,182,86,.4); color: var(--amber); border-radius: 999px; padding: 3px 10px; }
+  .inventory { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; order: 3; }
+  .chip { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; background: rgba(240,182,86,.18); border: 1.5px solid rgba(240,182,86,.5); color: var(--amber); border-radius: 999px; padding: 6px 14px; }
   .minimap-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-  .minimap-wrap svg { background: rgba(6,7,10,.55); border: 1px solid var(--edge); border-radius: 6px; }
-  .item-hint { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 2; font-family: var(--font-ui); font-size: .8rem; color: var(--amber); background: rgba(10,8,13,.75); border: 1px solid rgba(240,182,86,.5); border-radius: 999px; padding: 6px 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .minimap-wrap svg { background: rgba(6,7,10,.6); border: 1.5px solid rgba(79,215,220,.4); border-radius: 8px; }
+  .item-hint { position: absolute; left: 50%; bottom: 108px; transform: translateX(-50%); z-index: 2; font-family: var(--font-ui); font-weight: 700; font-size: 1.05rem; color: var(--amber); background: rgba(10,8,13,.82); border: 1.5px solid rgba(240,182,86,.6); border-radius: 999px; padding: 8px 18px; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .item-hint.show { opacity: 1; }
-  .dpad { position: absolute; left: 14px; bottom: 14px; z-index: 3; display: grid; grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(2, 40px); gap: 4px; }
-  .dpad-btn { padding: 0; font-size: 1.05rem; line-height: 1; background: rgba(10,8,13,.6); backdrop-filter: blur(2px); }
+  .dpad { position: absolute; left: 12px; bottom: 12px; z-index: 3; display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(2, 58px); gap: 6px; }
+  .dpad-btn { padding: 0; font-size: 1.6rem; line-height: 1; background: rgba(10,8,13,.68); border-color: rgba(79,215,220,.5); backdrop-filter: blur(2px); }
   .dpad-up { grid-column: 2; grid-row: 1; }
   .dpad-left { grid-column: 1; grid-row: 2; }
   .dpad-right { grid-column: 3; grid-row: 2; }
   .dpad-down { grid-column: 2; grid-row: 2; }
-  .toast { position: absolute; top: 84px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 3; background: rgba(14,12,18,.92); border: 1px solid var(--edge); border-radius: 8px; padding: 8px 16px; font-family: var(--font-body); font-size: .92rem; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; max-width: 84%; text-align: center; }
+  .toast { position: absolute; top: 84px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 3; background: rgba(14,12,18,.92); border: 1.5px solid rgba(79,215,220,.4); border-radius: 10px; padding: 10px 18px; font-family: var(--font-body); font-size: 1.05rem; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; max-width: 88%; text-align: center; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   /* action-panel lives BELOW the 3D view (not overlaid on it), so it
      never collides with the D-pad or any other canvas overlay. */
@@ -104,11 +110,11 @@
   .action-panel.shock { animation: shock-flash .4s ease-out; }
   @keyframes shock-flash { 0% { box-shadow: inset 0 0 40px 6px rgba(217,42,51,.5); } 100% { box-shadow: inset 0 0 0 0 rgba(217,42,51,0); } }
   @media (prefers-reduced-motion: reduce) { .action-panel.shock { animation: none; } }
-  .hint-line { font-family: var(--font-ui); font-size: .8rem; color: var(--muted); margin: 0 0 6px; text-align: center; }
-  .quiz-question, .pref-prompt { font-family: var(--font-body); font-size: 1.02rem; line-height: 1.6; margin: 0 0 14px; }
-  .options-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
-  .result-message { font-family: var(--font-body); font-size: 1.02rem; line-height: 1.6; margin: 0 0 16px; }
-  .badge { display: inline-block; font-family: var(--font-mono); font-size: .7rem; letter-spacing: .1em; padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; }
+  .hint-line { font-family: var(--font-ui); font-size: .95rem; color: var(--muted); margin: 0 0 8px; text-align: center; }
+  .quiz-question, .pref-prompt { font-family: var(--font-body); font-size: 1.18rem; line-height: 1.6; margin: 0 0 16px; }
+  .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .result-message { font-family: var(--font-body); font-size: 1.15rem; line-height: 1.6; margin: 0 0 16px; }
+  .badge { display: inline-block; font-family: var(--font-mono); font-size: .8rem; letter-spacing: .1em; padding: 4px 12px; border-radius: 999px; margin-bottom: 10px; }
   .badge-success { background: rgba(95,206,136,.18); color: var(--good); border: 1px solid rgba(95,206,136,.4); }
   .badge-fail { background: rgba(217,42,51,.18); color: var(--red-glow); border: 1px solid rgba(217,42,51,.4); }
   .stage-clear, .game-over, .season-clear { text-align: center; }
@@ -116,9 +122,9 @@
   .stage-clear h2 { color: var(--cyan); }
   .game-over h2 { color: var(--red-glow); }
   .season-clear h2 { color: var(--amber); }
-  .recap-stats { display: flex; justify-content: center; gap: 18px; font-family: var(--font-mono); font-size: .8rem; color: var(--muted); margin: 8px 0 14px; }
-  .recap-stats span { text-align: center; line-height: 1.6; }
-  .recap-stats b { color: var(--ink); font-size: .95rem; }
+  .recap-stats { display: flex; justify-content: center; gap: 20px; font-family: var(--font-mono); font-size: .92rem; color: var(--muted); margin: 8px 0 14px; }
+  .recap-stats span { text-align: center; line-height: 1.7; }
+  .recap-stats b { color: var(--ink); font-size: 1.15rem; }
   .recap-map { display: flex; justify-content: center; margin: 10px 0 16px; }
   .footnote { text-align: center; font-family: var(--font-mono); font-size: .7rem; color: var(--muted); letter-spacing: .03em; }
 </style>
@@ -182,11 +188,11 @@
   const PLAYABLE = ["el", "mike", "hopper", "joyce", "dustin", "lucas"];
 
   const ITEMS = {
-    waffle:    { name: "와플", effect: "heal", amount: 1 },
-    radio:     { name: "무전기", effect: "reveal_next", amount: 0 },
-    torch:     { name: "횃불", effect: "fight_bonus", amount: 0.2 },
-    molotov:   { name: "화염병", effect: "instant_win_fight", amount: 0 },
-    slingshot: { name: "새총", effect: "fight_bonus", amount: 0.15 },
+    waffle:    { name: "와플", icon: "🧇", effect: "heal", amount: 1 },
+    radio:     { name: "무전기", icon: "📻", effect: "reveal_next", amount: 0 },
+    torch:     { name: "횃불", icon: "🔥", effect: "fight_bonus", amount: 0.2 },
+    molotov:   { name: "화염병", icon: "🧨", effect: "instant_win_fight", amount: 0 },
+    slingshot: { name: "새총", icon: "🏹", effect: "fight_bonus", amount: 0.15 },
   };
   const ITEM_POOL = ["waffle", "waffle", "radio", "torch", "molotov", "slingshot"];
 
@@ -855,10 +861,14 @@
       renderer.setSize(w, h, false);
       camera.aspect = w / h; camera.updateProjectionMatrix();
     }
+    // Floor/wall/ceiling are deliberately three different brightness tiers
+    // (dark ceiling < darker-neutral floor < brighter, saturated wall) so
+    // the three surfaces read as distinct planes instead of blurring
+    // together into one color.
     function themeFor(stageId) {
       return stageId >= 4
-        ? { wall: 0x5a2438, floor: 0x3a1826, fog: 0x2a1220, light: 0xffab7a, accent: 0xe35fc9 }
-        : { wall: 0x27505c, floor: 0x1c3038, fog: 0x123038, light: 0xbdeef2, accent: 0x4fd7dc };
+        ? { wall: 0x7a2d4a, floor: 0x1c1014, ceiling: 0x0c0708, fog: 0x2a1220, light: 0xffab7a, accent: 0xe35fc9 }
+        : { wall: 0x2f6a7a, floor: 0x14181c, ceiling: 0x0a0c0e, fog: 0x123038, light: 0xbdeef2, accent: 0x4fd7dc };
     }
     function clearScene() {
       while (scene.children.length) scene.remove(scene.children[0]);
@@ -879,22 +889,35 @@
       const span = n * CELL + CELL;
       const center = (n - 1) * CELL / 2;
       const floorMat = new THREE.MeshStandardMaterial({ color: theme.floor, roughness: 0.92 });
+      const ceilMat = new THREE.MeshStandardMaterial({ color: theme.ceiling, roughness: 0.95 });
       const wallTex = buildWallTexture(theme);
       const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, color: theme.wall, roughness: 0.82, metalness: 0.06 });
       const doorTex = buildDoorTexture(theme);
       const doorMat = new THREE.MeshStandardMaterial({ map: doorTex, emissive: 0xf0b656, emissiveIntensity: 0.25, roughness: 0.6 });
       const floor = new THREE.Mesh(new THREE.BoxGeometry(span, 0.2, span), floorMat);
       floor.position.set(center, -1, center); scene.add(floor);
-      const ceil = floor.clone(); ceil.position.y = WALL_H - 0.2; scene.add(ceil);
+      const ceil = new THREE.Mesh(new THREE.BoxGeometry(span, 0.2, span), ceilMat);
+      ceil.position.set(center, WALL_H - 0.2, center); scene.add(ceil);
 
-      function wallBox(cx, cz, horizontal, isDoor) {
+      // Six materials per wall [+X,-X,+Y,-Y,+Z,-Z] (BoxGeometry's fixed
+      // per-face group order) so the door texture paints ONLY the face
+      // that actually looks into the exit cell -- a single shared
+      // material would paint the door on BOTH sides of that wall, which
+      // is exactly what made it visible from the non-exit side too.
+      function wallBox(cx, cz, horizontal, doorFace) {
         const geo = horizontal
           ? new THREE.BoxGeometry(CELL + WALL_T, WALL_H, WALL_T)
           : new THREE.BoxGeometry(WALL_T, WALL_H, CELL + WALL_T);
-        const m = new THREE.Mesh(geo, isDoor ? doorMat : wallMat);
+        let material = wallMat;
+        if (doorFace) {
+          const faceIndex = { "+X": 0, "-X": 1, "+Z": 4, "-Z": 5 }[doorFace];
+          material = [wallMat, wallMat, wallMat, wallMat, wallMat, wallMat];
+          material[faceIndex] = doorMat;
+        }
+        const m = new THREE.Mesh(geo, material);
         m.position.set(cx, WALL_H / 2 - 1, cz);
         scene.add(m);
-        if (isDoor) {
+        if (doorFace) {
           const l = new THREE.PointLight(0xf0b656, 1.5, 9, 2);
           l.position.set(cx, 1.6, cz);
           scene.add(l); flicker.push(l);
@@ -903,10 +926,12 @@
       for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
         const cell = maze.cells[r][c];
         const isExitCell = r === maze.exit.r && c === maze.exit.c;
-        if (cell.walls.N) wallBox(worldX(c), worldZ(r) - CELL / 2, true, isExitCell);
-        if (cell.walls.W) wallBox(worldX(c) - CELL / 2, worldZ(r), false, isExitCell);
-        if (r === n - 1 && cell.walls.S) wallBox(worldX(c), worldZ(r) + CELL / 2, true, isExitCell);
-        if (c === n - 1 && cell.walls.E) wallBox(worldX(c) + CELL / 2, worldZ(r), false, isExitCell);
+        // The door always faces INTO the exit cell -- e.g. a wall on the
+        // exit cell's north edge is seen from the exit side facing +Z.
+        if (cell.walls.N) wallBox(worldX(c), worldZ(r) - CELL / 2, true, isExitCell ? "+Z" : null);
+        if (cell.walls.W) wallBox(worldX(c) - CELL / 2, worldZ(r), false, isExitCell ? "+X" : null);
+        if (r === n - 1 && cell.walls.S) wallBox(worldX(c), worldZ(r) + CELL / 2, true, isExitCell ? "-Z" : null);
+        if (c === n - 1 && cell.walls.E) wallBox(worldX(c) + CELL / 2, worldZ(r), false, isExitCell ? "-X" : null);
       }
 
       // a small glow at ENCOUNTER/ITEM/EVENT cells so a discovered spot
@@ -1125,9 +1150,9 @@
     const c = G.character(), s = G.stage();
     const hearts = "♥".repeat(G.state.hp).split("").map(() => '<span class="heart-full">♥</span>').join("")
       + "♡".repeat(G.state.maxHp - G.state.hp).split("").map(() => '<span class="heart-empty">♡</span>').join("");
-    const inv = Object.entries(G.state.inventory).map(([id, n]) => `<span class="chip">${ITEMS[id].name} ×${n}</span>`).join("")
+    const inv = Object.entries(G.state.inventory).map(([id, n]) => `<span class="chip">${ITEMS[id].icon} ${ITEMS[id].name} ×${n}</span>`).join("")
       || `<span class="chip" style="opacity:.5">인벤토리 없음</span>`;
-    const svg = buildMazeSVG(G.maze, { unit: 8, wallWidth: 1, player: { row: G.state.row, col: G.state.col, facing: G.state.facing } });
+    const svg = buildMazeSVG(G.maze, { unit: 13, wallWidth: 1.8, player: { row: G.state.row, col: G.state.col, facing: G.state.facing } });
     statusBar.innerHTML = `
       <div class="status-left"><span class="char">${c.name}</span><span class="stage">${s.name} · ${s.id}/5</span></div>
       <div class="hearts">${hearts}</div>
@@ -1171,7 +1196,7 @@
     }
     const util = Object.keys(G.state.inventory).filter((id) => id === "waffle" || id === "radio");
     if (util.length) {
-      html += `<div class="action-grid">${util.map((id) => `<button data-action="use-util-item" data-item="${id}">${ITEMS[id].name} 사용</button>`).join("")}</div>`;
+      html += `<div class="action-grid">${util.map((id) => `<button data-action="use-util-item" data-item="${id}">${ITEMS[id].icon} ${ITEMS[id].name} 사용</button>`).join("")}</div>`;
     }
     viewport.innerHTML = html;
     refreshMenuButtons();
@@ -1181,9 +1206,9 @@
     viewport.innerHTML = `
       <p class="flavor">${escapeHtml(ui.lastOutcome.message)}</p>
       <div class="action-grid">
-        <button data-action="choose-action" data-choice="fight">⚔️ 싸움 <span class="kbd">[1]</span></button>
-        <button data-action="choose-action" data-choice="quiz">🧩 퀴즈 풀기 <span class="kbd">[2]</span></button>
-        <button data-action="choose-action" data-choice="pref">🗣️ 취향 맞추기 <span class="kbd">[3]</span></button>
+        <button class="choice-fight" data-action="choose-action" data-choice="fight">⚔️ 싸움 <span class="kbd">[1]</span></button>
+        <button class="choice-quiz" data-action="choose-action" data-choice="quiz">🧩 퀴즈 풀기 <span class="kbd">[2]</span></button>
+        <button class="choice-pref" data-action="choose-action" data-choice="pref">🗣️ 취향 맞추기 <span class="kbd">[3]</span></button>
       </div>`;
     refreshMenuButtons();
   }
@@ -1192,7 +1217,7 @@
     viewport.innerHTML = `
       <p class="flavor">전투에 쓸 아이템이 있습니다. 사용하시겠습니까?</p>
       <div class="action-grid">
-        ${combat.map((id, i) => `<button data-action="use-combat-item" data-item="${id}">${ITEMS[id].name} 사용 <span class="kbd">[${i + 1}]</span></button>`).join("")}
+        ${combat.map((id, i) => `<button data-action="use-combat-item" data-item="${id}">${ITEMS[id].icon} ${ITEMS[id].name} 사용 <span class="kbd">[${i + 1}]</span></button>`).join("")}
         <button data-action="fight-plain">그냥 싸운다 <span class="kbd">[${combat.length + 1}]</span></button>
       </div>`;
     refreshMenuButtons();
@@ -1213,7 +1238,7 @@
     const cands = ui.itemCandidates;
     viewport.innerHTML = `
       <p class="flavor">둘 중 하나만 챙길 수 있습니다. (Space로 고르고 Enter로 확정, 또는 숫자키)</p>
-      <div class="action-grid">${cands.map((id, i) => `<button data-action="pick-item" data-index="${i}">${ITEMS[id].name} 챙기기 <span class="kbd">[${i + 1}]</span></button>`).join("")}</div>`;
+      <div class="action-grid">${cands.map((id, i) => `<button data-action="pick-item" data-index="${i}">${ITEMS[id].icon} ${ITEMS[id].name} 챙기기 <span class="kbd">[${i + 1}]</span></button>`).join("")}</div>`;
     refreshMenuButtons();
   }
   function renderStageClear() {
@@ -1222,7 +1247,7 @@
     const mm = String(Math.floor(elapsed / 60000)).padStart(2, "0");
     const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0");
     const score = Math.max(0, 1000 - G.state.moves * 8 - Math.floor(elapsed / 1000) * 3);
-    const svg = buildMazeSVG(G.maze, { unit: 18, path: G.state.path, wallColor: "#3a4552", pathColor: "#f0b656" });
+    const svg = buildMazeSVG(G.maze, { unit: 20, path: G.state.path, wallColor: "#3a4552", pathColor: "#f0b656" });
     const isFinal = G.state.seasonCleared;
     viewport.innerHTML = `
       <div class="stage-clear">
@@ -1246,7 +1271,7 @@
     refreshMenuButtons();
   }
   function renderGameOver() {
-    const svg = buildMazeSVG(G.maze, { unit: 18, path: G.state.path, wallColor: "#3a4552", pathColor: "#9a5a5a" });
+    const svg = buildMazeSVG(G.maze, { unit: 20, path: G.state.path, wallColor: "#3a4552", pathColor: "#9a5a5a" });
     viewport.innerHTML = `
       <div class="game-over">
         <span class="badge badge-fail">GAME OVER</span>
