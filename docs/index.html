@@ -55,13 +55,28 @@
   @keyframes pulse-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { body::after { animation: none; } }
   .app { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
-  .masthead { text-align: center; margin-bottom: 20px; }
-  .masthead h1 {
-    font-family: var(--font-display); font-size: clamp(2.5rem, 9vw, 3.6rem); letter-spacing: 0.05em;
-    color: var(--ink); text-shadow: 0 0 20px rgba(184, 100, 58, 0.5), 0 0 2px var(--red-glow);
+  #splash {
+    position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; background: var(--bg); text-align: center;
+    transition: opacity .6s ease, transform .6s ease; cursor: pointer;
+  }
+  #splash.hide { opacity: 0; transform: scale(1.08); pointer-events: none; }
+  #splash h1 {
+    font-family: var(--font-display); font-size: clamp(2.8rem, 12vw, 5rem); letter-spacing: 0.05em;
+    color: var(--ink); text-shadow: 0 0 26px rgba(167, 139, 250, 0.55), 0 0 3px var(--red-glow);
     margin: 0; text-wrap: balance;
   }
-  .masthead .sub { display: block; font-family: var(--font-mono); font-size: 1rem; letter-spacing: 0.28em; color: var(--cyan); margin-top: 8px; }
+  #splash .sub { display: block; font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.28em; color: var(--cyan); margin-top: 10px; }
+  .menu-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 4; min-height: 0; padding: 10px 14px;
+    font-size: clamp(1.1rem, 4vw, 1.4rem); background: rgba(10,8,13,.72); backdrop-filter: blur(2px);
+  }
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    font-family: var(--font-ui); font-size: 1.15rem; color: var(--ink); cursor: pointer;
+  }
+  .setting-row input[type="checkbox"] { width: 1.6em; height: 1.6em; accent-color: var(--cyan); cursor: pointer; }
+  .stage-intro-title { font-family: var(--font-display); font-size: clamp(1.6rem, 6vw, 2.1rem); color: var(--ink); margin: 8px 0 14px; }
   .screen { display: flex; flex-direction: column; gap: 18px; }
   .panel {
     background: linear-gradient(180deg, var(--panel), var(--panel-2));
@@ -106,7 +121,7 @@
   .char-card .char-desc { font-family: var(--font-body); font-size: 1.2rem; color: var(--muted); line-height: 1.55; }
   .game-stage { position: relative; width: 100%; height: min(66vh,580px); min-height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid var(--edge); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
   #scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 14px 20px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
+  .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 56px 20px 14px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
   .status-left { display: flex; flex-direction: column; gap: 2px; }
   .status-left .char { color: var(--cyan); font-size: 1.3rem; font-family: var(--font-ui); font-weight: 600; }
   .status-left .stage { font-size: 1.45rem; font-family: var(--font-ui); font-weight: 700; }
@@ -170,27 +185,65 @@
   .footnote { text-align: center; font-family: var(--font-mono); font-size: .85rem; color: var(--muted); letter-spacing: .03em; }
 </style>
 <div class="app">
-  <div class="masthead"><h1>기묘한 미로</h1><span class="sub">STRANGER MAZES · SEASON 1 · 3D</span></div>
-
-  <main id="screen-title" class="screen">
-    <div class="panel">
-      <p class="lede">호킨스 연구소 지하, 뒤집힌 세계로 이어지는 진짜 갈림길투성이 미로에 갇혔다.
-      <b>방향키(↑↓←→)</b>로 걷고 돌아 진짜 좌/우 통로를 탐험하라. 아이템 위에서 <b>스페이스바</b>로 줍고,
-      데모고르곤을 만나면 <b>1</b> 싸움 / <b>2</b> 퀴즈 / <b>3</b> 취향 맞추기(또는 스페이스바로 고르고 엔터) 중 하나로 맞서라.</p>
+  <main id="screen-menu" class="screen" hidden>
+    <div class="panel"><p class="flavor" style="margin:0">호킨스 연구소 지하, 뒤집힌 세계로 이어지는 미로에 갇혔다.</p></div>
+    <div class="action-grid">
+      <button class="btn-primary" data-action="goto-select">새 게임</button>
+      <button data-action="continue-save" id="menu-continue-btn" hidden>이어하기</button>
+      <button data-action="goto-char-info">캐릭터 정보</button>
+      <button data-action="goto-instructions">게임 설명</button>
+      <button data-action="goto-settings">설정</button>
     </div>
-    <div class="center"><button class="btn-primary" data-action="goto-select">새 게임 시작</button></div>
-    <div id="continue-row" class="center" hidden><button data-action="continue-save">이어하기 (이 브라우저에 저장된 기록)</button></div>
+  </main>
+
+  <main id="screen-instructions" class="screen" hidden>
+    <div class="panel">
+      <p class="lede" style="text-align:left">진짜 갈림길투성이 미로를 <b>방향키(↑↓←→)</b>로 걷고 돌거나, 3D 화면을 <b>드래그</b>해서
+      이동한다. 바닥에 아이템이 보이면 <b>스페이스바</b>(모바일은 화면의 "줍기" 버튼)로 줍고,
+      데모고르곤을 만나면 <b>1</b> 싸움 / <b>2</b> 퀴즈 / <b>3</b> 취향 맞추기(또는 스페이스바로 고르고 엔터) 중
+      하나로 맞선다. 하트가 0이 되면 시즌 1단계부터 다시 시작한다.</p>
+    </div>
+    <div class="center"><button data-action="goto-menu">메뉴로</button></div>
+  </main>
+
+  <main id="screen-settings" class="screen" hidden>
+    <div class="panel">
+      <label class="setting-row">
+        <span>모바일에서 방향 패드(D패드) 표시</span>
+        <input type="checkbox" id="setting-dpad" checked>
+      </label>
+      <p class="hint-line" style="margin-top:10px">꺼두어도 화면을 드래그해서 계속 이동할 수 있습니다.</p>
+    </div>
+    <div class="center"><button data-action="goto-menu">메뉴로</button></div>
+  </main>
+
+  <main id="screen-char-info" class="screen" hidden>
+    <div class="panel"><p class="flavor" style="margin:0">시즌 1에서 고를 수 있는 캐릭터와 고유 능력입니다.</p></div>
+    <div class="char-grid" id="char-info-grid"></div>
+    <div class="center"><button data-action="goto-menu">메뉴로</button></div>
   </main>
 
   <main id="screen-select" class="screen" hidden>
     <div class="panel"><p class="flavor" style="margin:0">플레이할 캐릭터를 고르세요. 캐릭터마다 실제 플레이에 영향을 주는 고유 능력이 있습니다.</p></div>
     <div class="char-grid" id="char-grid"></div>
+    <div class="center"><button data-action="goto-menu">메뉴로</button></div>
+  </main>
+
+  <main id="screen-stage-intro" class="screen" hidden>
+    <div class="panel">
+      <span class="badge badge-success" id="stage-intro-badge"></span>
+      <h2 class="stage-intro-title" id="stage-intro-title"></h2>
+      <p class="lede" style="text-align:left" id="stage-intro-text"></p>
+    </div>
+    <div class="center"><button class="btn-primary" data-action="confirm-stage-intro">확인</button></div>
+    <div class="center"><button data-action="goto-menu">메뉴로</button></div>
   </main>
 
   <main id="screen-game" class="screen" hidden>
     <div class="game-stage">
       <canvas id="scene-canvas"></canvas>
       <div class="hud-status" id="status-bar"></div>
+      <button class="menu-btn" data-action="goto-menu" aria-label="메뉴로">☰</button>
       <div class="toast" id="toast"></div>
       <div class="dpad" id="dpad">
         <button class="dpad-btn dpad-up" data-move="forward" aria-label="전진">▲</button>
@@ -204,6 +257,10 @@
   </main>
 
   <p class="footnote">↑↓ 전진/후진 · ← → 회전 · Space 상호작용/선택 · ↓ 조우 취소 · Enter 확정 · 1·2·3 단축키</p>
+</div>
+<div id="splash">
+  <h1>기묘한 미로</h1>
+  <span class="sub">STRANGER MAZES · SEASON 1 · 3D</span>
 </div>
 <script>
 (() => {
@@ -1177,14 +1234,47 @@
   let scene3DReady = false, toastTimer = null, menuIndex = 0;
   let forwardHeld = false, backwardHeld = false, repeatTimer = null;
 
-  const screens = { title: document.getElementById("screen-title"), select: document.getElementById("screen-select"), game: document.getElementById("screen-game") };
+  const screens = {
+    menu: document.getElementById("screen-menu"),
+    instructions: document.getElementById("screen-instructions"),
+    settings: document.getElementById("screen-settings"),
+    charInfo: document.getElementById("screen-char-info"),
+    select: document.getElementById("screen-select"),
+    stageIntro: document.getElementById("screen-stage-intro"),
+    game: document.getElementById("screen-game"),
+  };
   const viewport = document.getElementById("viewport");
   const statusBar = document.getElementById("status-bar");
   const charGrid = document.getElementById("char-grid");
+  const charInfoGrid = document.getElementById("char-info-grid");
   const toastEl = document.getElementById("toast");
   const interactBtn = document.getElementById("interact-btn");
+  const dpadEl = document.getElementById("dpad");
+  const DPAD_SETTING_KEY = "stranger_mazes_dpad_v1";
+  const STAGE_INTRO = {
+    1: "호킨스 연구소 지하, 뒤집힌 세계로 이어지는 미로에 갇혔다. 갈림길마다 방향을 골라 출구를 찾아야 한다. 아직은 낯선 통로뿐이지만, 어딘가에 데모고르곤이 도사리고 있다.",
+    2: "연구소 안쪽 깊숙한 곳. 서류와 깨진 시험관이 나뒹구는 복도가 복잡하게 얽혀 있다. 갈림길이 늘어난 만큼, 데모고르곤과 마주칠 가능성도 커졌다.",
+    3: "지상으로 향하는 길이 막혀 지하 배관 통로로 내려왔다. 좁고 어두운 길이 계속 이어지고, 벽 틈새로 숨겨진 물자가 종종 눈에 띈다.",
+    4: "현실과 뒤집힌 세계를 가르는 경계가 얇아지는 구역. 공기 중에 검은 포자가 떠다니고, 데모고르곤의 기척이 한층 사나워졌다.",
+    5: "뒤집힌 세계의 심장부, 크릴 하우스. 이 미로 어딘가에서 강화된 데모고르곤이 최후의 결전을 기다리고 있다.",
+  };
 
   function showScreen(name) { for (const k in screens) screens[k].hidden = k !== name; }
+  function applyDpadSetting() {
+    let show = true;
+    try { show = localStorage.getItem(DPAD_SETTING_KEY) !== "0"; } catch (e) { /* private mode etc. */ }
+    dpadEl.hidden = !show;
+    const cb = document.getElementById("setting-dpad");
+    if (cb) cb.checked = show;
+  }
+  function showStageIntro(onConfirm) {
+    document.getElementById("stage-intro-badge").textContent = `STAGE ${G.stage().id}/5`;
+    document.getElementById("stage-intro-title").textContent = G.stage().name;
+    document.getElementById("stage-intro-text").textContent = STAGE_INTRO[G.stage().id] || "";
+    pendingStageIntroConfirm = onConfirm;
+    showScreen("stageIntro");
+  }
+  let pendingStageIntroConfirm = null;
   function ensureScene3D() {
     if (!scene3DReady) { Scene3D.init(document.getElementById("scene-canvas")); scene3DReady = true; }
     else Scene3D.resize();
@@ -1215,6 +1305,16 @@
       return `<button class="panel char-card" data-action="select-character" data-char="${id}">
         <span class="char-name">${c.name}</span><span class="char-hp">${"♥".repeat(c.baseHp)}</span><span class="char-desc">${c.desc}</span>
       </button>`;
+    }).join("");
+  }
+  // Same cards, read-only -- a plain div instead of a clickable button,
+  // since this screen is for browsing, not for starting a run.
+  function renderCharInfoGrid() {
+    charInfoGrid.innerHTML = PLAYABLE.map((id) => {
+      const c = CHARACTERS[id];
+      return `<div class="panel char-card">
+        <span class="char-name">${c.name}</span><span class="char-hp">${"♥".repeat(c.baseHp)}</span><span class="char-desc">${c.desc}</span>
+      </div>`;
     }).join("");
   }
 
@@ -1496,11 +1596,23 @@
     canvasEl.addEventListener("pointercancel", () => { dragging = false; });
   })();
 
-  document.getElementById("screen-title").addEventListener("click", (e) => {
+  // "메뉴로" is offered on nearly every screen -- one delegated listener
+  // covers all of them instead of wiring it per screen.
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="goto-menu"]');
+    if (!btn) return;
+    if (G.state) saveLocal();
+    document.getElementById("menu-continue-btn").hidden = !loadLocal();
+    showScreen("menu");
+  });
+  screens.menu.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     if (btn.dataset.action === "goto-select") { renderCharGrid(); showScreen("select"); }
-    if (btn.dataset.action === "continue-save") {
+    else if (btn.dataset.action === "goto-instructions") { showScreen("instructions"); }
+    else if (btn.dataset.action === "goto-settings") { showScreen("settings"); }
+    else if (btn.dataset.action === "goto-char-info") { renderCharInfoGrid(); showScreen("charInfo"); }
+    else if (btn.dataset.action === "continue-save") {
       const saved = loadLocal();
       if (saved) {
         restoreFromSave(saved);
@@ -1520,14 +1632,23 @@
     if (!btn) return;
     const seed = Math.floor(Math.random() * 1e9);
     G.startNewRun(btn.dataset.char, seed);
-    ui.phase = "junction";
-    showScreen("game");
-    ensureScene3D();
-    Scene3D.buildStage(G.maze, G.stage());
-    Scene3D.setPose(0, 0, G.state.facing);
-    Scene3D.setFrozen(false);
-    saveLocal();
-    render();
+    showStageIntro(() => {
+      ui.phase = "junction";
+      showScreen("game");
+      ensureScene3D();
+      Scene3D.buildStage(G.maze, G.stage());
+      Scene3D.setPose(0, 0, G.state.facing);
+      Scene3D.setFrozen(false);
+      saveLocal();
+      render();
+    });
+  });
+  screens.stageIntro.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="confirm-stage-intro"]');
+    if (!btn || !pendingStageIntroConfirm) return;
+    const run = pendingStageIntroConfirm;
+    pendingStageIntroConfirm = null;
+    run();
   });
   viewport.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
@@ -1552,30 +1673,50 @@
     if (action === "pick-item") { applyOutcome(G.confirmItemChoiceAt(ui.itemTarget.row, ui.itemTarget.col, Number(btn.dataset.index)), ui.itemTarget); return; }
     if (action === "next-stage") {
       G.advanceToNextStage();
-      Scene3D.buildStage(G.maze, G.stage());
-      Scene3D.setPose(0, 0, G.state.facing);
-      Scene3D.setFrozen(false);
-      ui.phase = "junction";
-      pushLog(`STAGE ${G.state.stageId}: ${G.stage().name} 시작.`);
-      saveLocal(); render();
+      showStageIntro(() => {
+        Scene3D.buildStage(G.maze, G.stage());
+        Scene3D.setPose(0, 0, G.state.facing);
+        Scene3D.setFrozen(false);
+        ui.phase = "junction";
+        showScreen("game");
+        saveLocal(); render();
+      });
       return;
     }
     if (action === "goto-season-clear") { ui.phase = "season_clear"; render(); return; }
     if (action === "restart") {
       G.restartSeason();
-      Scene3D.buildStage(G.maze, G.stage());
-      Scene3D.setPose(0, 0, G.state.facing);
-      Scene3D.setFrozen(false);
-      ui.phase = "junction";
-      pushLog("시즌 1단계부터 다시 시작합니다.");
-      saveLocal(); render();
+      showStageIntro(() => {
+        Scene3D.buildStage(G.maze, G.stage());
+        Scene3D.setPose(0, 0, G.state.facing);
+        Scene3D.setFrozen(false);
+        ui.phase = "junction";
+        showScreen("game");
+        saveLocal(); render();
+      });
       return;
     }
     if (action === "goto-select") { renderCharGrid(); showScreen("select"); }
   });
 
   const existingSave = loadLocal();
-  if (existingSave) document.getElementById("continue-row").hidden = false;
-  showScreen("title");
+  if (existingSave) document.getElementById("menu-continue-btn").hidden = false;
+  applyDpadSetting();
+  document.getElementById("setting-dpad").addEventListener("change", (e) => {
+    try { localStorage.setItem(DPAD_SETTING_KEY, e.target.checked ? "1" : "0"); } catch (err) { /* private mode etc. */ }
+    applyDpadSetting();
+  });
+  showScreen("menu");
+
+  // A brief title reveal over everything, then it fades away on its own
+  // (or on a tap) to the menu underneath, which is already showing.
+  const splashEl = document.getElementById("splash");
+  function dismissSplash() {
+    if (!splashEl || splashEl.classList.contains("hide")) return;
+    splashEl.classList.add("hide");
+    setTimeout(() => { splashEl.hidden = true; }, 700);
+  }
+  splashEl.addEventListener("click", dismissSplash);
+  setTimeout(dismissSplash, 1400);
 })();
 </script>
