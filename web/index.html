@@ -77,7 +77,41 @@
   }
   .setting-row input[type="checkbox"] { width: 1.6em; height: 1.6em; accent-color: var(--cyan); cursor: pointer; }
   .stage-intro-title { font-family: var(--font-display); font-size: clamp(1.6rem, 6vw, 2.1rem); color: var(--ink); margin: 8px 0 14px; }
-  .screen { display: flex; flex-direction: column; gap: 18px; }
+  .screen {
+    display: flex; flex-direction: column; gap: 18px;
+    opacity: 0; transform: translateY(10px); transition: opacity .3s ease, transform .3s ease;
+  }
+  .screen.screen-in { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) { .screen { transition: none; transform: none; } }
+  /* Every non-game screen opens with the same icon+title beat, so moving
+     between menu / instructions / settings / character info reads as
+     moving between real places, not swapped text in one box. */
+  .screen-header { display: flex; align-items: center; gap: 14px; }
+  .screen-header .screen-icon {
+    width: 52px; height: 52px; border-radius: 14px; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 1.7rem;
+    background: linear-gradient(160deg, var(--panel-2), var(--panel)); border: 1.5px solid var(--edge);
+  }
+  .screen-header h2 { font-family: var(--font-display); font-size: clamp(1.5rem, 6vw, 2rem); margin: 0; color: var(--ink); }
+  .menu-hero {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    gap: 10px; padding: 28px 16px 22px; position: relative;
+  }
+  .menu-hero::after {
+    content: ""; position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%);
+    width: 72px; height: 3px; background: linear-gradient(90deg, transparent, var(--red), transparent);
+    border-radius: 2px;
+  }
+  .menu-hero h1 {
+    font-family: var(--font-display); margin: 0; letter-spacing: 0.04em;
+    font-size: clamp(2.4rem, 11vw, 3.4rem); color: var(--red);
+    text-shadow: 0 0 18px var(--red-glow), 0 0 46px rgba(255,59,48,0.35);
+  }
+  .menu-hero-sub {
+    font-family: var(--font-mono); font-size: clamp(0.7rem, 3vw, 0.85rem);
+    letter-spacing: 0.3em; color: var(--cyan); text-transform: uppercase;
+  }
+  .menu-hero .flavor { margin: 6px 0 0; max-width: 34ch; }
   .panel {
     background: linear-gradient(180deg, var(--panel), var(--panel-2));
     border: 1px solid var(--edge); border-radius: 4px; padding: 22px;
@@ -186,7 +220,11 @@
 </style>
 <div class="app">
   <main id="screen-menu" class="screen" hidden>
-    <div class="panel"><p class="flavor" style="margin:0">호킨스 연구소 지하, 뒤집힌 세계로 이어지는 미로에 갇혔다.</p></div>
+    <div class="menu-hero">
+      <h1>기묘한 미로</h1>
+      <span class="menu-hero-sub">STRANGER MAZES · SEASON 1</span>
+      <p class="flavor">호킨스 연구소 지하, 뒤집힌 세계로 이어지는 미로에 갇혔다.</p>
+    </div>
     <div class="action-grid">
       <button class="btn-primary" data-action="goto-select">새 게임</button>
       <button data-action="continue-save" id="menu-continue-btn" hidden>이어하기</button>
@@ -197,6 +235,7 @@
   </main>
 
   <main id="screen-instructions" class="screen" hidden>
+    <div class="screen-header"><span class="screen-icon">📖</span><h2>게임 설명</h2></div>
     <div class="panel">
       <p class="lede" style="text-align:left">진짜 갈림길투성이 미로를 <b>방향키(↑↓←→)</b>로 걷고 돌거나, 3D 화면을 <b>드래그</b>해서
       이동한다. 바닥에 아이템이 보이면 <b>스페이스바</b>(모바일은 화면의 "줍기" 버튼)로 줍고,
@@ -207,6 +246,7 @@
   </main>
 
   <main id="screen-settings" class="screen" hidden>
+    <div class="screen-header"><span class="screen-icon">⚙️</span><h2>설정</h2></div>
     <div class="panel">
       <label class="setting-row">
         <span>모바일에서 방향 패드(D패드) 표시</span>
@@ -218,13 +258,15 @@
   </main>
 
   <main id="screen-char-info" class="screen" hidden>
-    <div class="panel"><p class="flavor" style="margin:0">시즌 1에서 고를 수 있는 캐릭터와 고유 능력입니다.</p></div>
+    <div class="screen-header"><span class="screen-icon">👥</span><h2>캐릭터 정보</h2></div>
+    <p class="flavor" style="text-align:center">시즌 1에서 고를 수 있는 캐릭터와 고유 능력입니다.</p>
     <div class="char-grid" id="char-info-grid"></div>
     <div class="center"><button data-action="goto-menu">메뉴로</button></div>
   </main>
 
   <main id="screen-select" class="screen" hidden>
-    <div class="panel"><p class="flavor" style="margin:0">플레이할 캐릭터를 고르세요. 캐릭터마다 실제 플레이에 영향을 주는 고유 능력이 있습니다.</p></div>
+    <div class="screen-header"><span class="screen-icon">🎭</span><h2>캐릭터 선택</h2></div>
+    <p class="flavor" style="text-align:center">플레이할 캐릭터를 고르세요. 캐릭터마다 실제 플레이에 영향을 주는 고유 능력이 있습니다.</p>
     <div class="char-grid" id="char-grid"></div>
     <div class="center"><button data-action="goto-menu">메뉴로</button></div>
   </main>
@@ -1259,7 +1301,23 @@
     5: "뒤집힌 세계의 심장부, 크릴 하우스. 이 미로 어딘가에서 강화된 데모고르곤이 최후의 결전을 기다리고 있다.",
   };
 
-  function showScreen(name) { for (const k in screens) screens[k].hidden = k !== name; }
+  function showScreen(name) {
+    for (const k in screens) {
+      const el = screens[k];
+      if (k === name) {
+        el.hidden = false;
+        el.classList.remove("screen-in");
+        // Force layout so the browser registers the pre-transition state
+        // before "screen-in" flips opacity/transform -- without this the
+        // two class changes coalesce and nothing visibly animates.
+        void el.offsetWidth;
+        el.classList.add("screen-in");
+      } else {
+        el.classList.remove("screen-in");
+        el.hidden = true;
+      }
+    }
+  }
   function applyDpadSetting() {
     let show = true;
     try { show = localStorage.getItem(DPAD_SETTING_KEY) !== "0"; } catch (e) { /* private mode etc. */ }
