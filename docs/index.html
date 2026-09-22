@@ -2,36 +2,42 @@
 <meta name="description" content="호킨스 연구소의 진짜 갈림길이 있는 3D 그리드 미로를 탐험하는 브라우저 게임. 방향키로 걷고 돌고, 스페이스바로 아이템을 줍고 조우를 선택한다.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Gothic+A1:wght@400;500;700;800&family=Noto+Serif+KR:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gothic+A1:wght@400;500;700;800&family=Noto+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   /*
-    기묘한 미로 -- redesigned around a single, committed world: a 1985
-    Hawkins Lab case file left in a drawer too long. Warm near-black and
-    aged paper instead of a cyan/magenta control-room palette; brass and
-    faded government-teal instead of neon; Courier Prime standing in for
-    a field typewriter. One deliberate look, not a toggleable theme.
+    기묘한 미로 -- clean, high-contrast, modern dark UI: neutral
+    near-black (not brown), near-white text, and vivid saturated red /
+    teal / amber / violet accents. Bold sans throughout -- no serif, no
+    typewriter mono -- so nothing here reads as a vintage document.
   */
   :root {
-    --bg: #0d0b08;
-    --panel: #201a12;
-    --panel-2: #2b2318;
-    --edge: #4a3a26;
-    --ink: #ece4d3;
-    --muted: #a89a84;
-    --red: #a8121f;
-    --red-deep: #3d0d10;
-    --red-glow: #e2402c;
-    --cyan: #4a8f7e;
-    --magenta: #b8643a;
-    --amber: #c98f3f;
-    --good: #6fae7c;
-    --font-display: 'Song Myung', serif;
+    --bg: #0b0d11;
+    --panel: #1a1d24;
+    --panel-2: #242832;
+    --edge: #454b58;
+    --ink: #f5f6f8;
+    --muted: #a7aebb;
+    --red: #ff3b30;
+    --red-deep: #7a0f0a;
+    --red-glow: #ff6b5c;
+    --cyan: #2dd4c8;
+    --magenta: #a78bfa;
+    --amber: #ffb020;
+    --good: #34d399;
+    --font-display: 'Do Hyeon', sans-serif;
     --font-ui: 'Gothic A1', sans-serif;
-    --font-mono: 'Courier Prime', 'Gothic A1', monospace;
-    --font-body: 'Noto Serif KR', serif;
+    --font-mono: 'IBM Plex Mono', 'Gothic A1', monospace;
+    --font-body: 'Noto Sans KR', sans-serif;
   }
   * { box-sizing: border-box; }
+  /* Every font-size below is rem/clamp(rem,...), so this one rule
+     reliably scales ALL of them for touch devices -- "pointer: coarse"
+     detects an actual touch-primary input, which is a real signal
+     (unlike viewport width, a small desktop window can't trigger it,
+     and a large tablet held close still gets the bigger text it needs). */
+  html { font-size: 16px; }
+  @media (pointer: coarse) { html { font-size: 20px; } }
   body {
     background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 16px;
     margin: 0; padding: 24px 16px 48px; min-height: 100vh; position: relative; overflow-x: hidden;
@@ -71,26 +77,26 @@
   .lede { font-family: var(--font-body); font-size: 1.35rem; line-height: 1.85; color: var(--muted); text-align: center; max-width: 54ch; margin: 0 auto; }
   button {
     font-family: var(--font-ui); font-weight: 700; font-size: clamp(1.25rem, 5vw, 1.55rem); cursor: pointer; border-radius: 5px;
-    border: 2px solid rgba(74,143,126,.4); background: var(--panel-2); color: var(--ink); padding: 20px 22px; min-height: 68px;
+    border: 2px solid rgba(45,212,200,.4); background: var(--panel-2); color: var(--ink); padding: 20px 22px; min-height: 68px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -2px 0 rgba(0,0,0,0.2);
     transition: border-color .15s, transform .1s, background .15s;
   }
-  button:hover { border-color: var(--cyan); background: #3a2f20; }
+  button:hover { border-color: var(--cyan); background: #2e333d; }
   button:active { transform: translateY(1px); }
   button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-  button.selected { border-color: var(--amber); background: rgba(201,143,63,.2); box-shadow: 0 0 0 2px var(--amber); }
+  button.selected { border-color: var(--amber); background: rgba(255,176,32,.2); box-shadow: 0 0 0 2px var(--amber); }
   .btn-primary { background: var(--red-deep); border-color: var(--red); color: #fff2f2; font-family: var(--font-display); letter-spacing: .02em; font-weight: 400; font-size: clamp(1.4rem, 5.6vw, 1.7rem); }
   .btn-primary:hover { background: var(--red); }
   .center { display: flex; justify-content: center; }
   /* Always one full-width column -- three narrow columns are hard to
      tap accurately on a phone, and stacked buttons cost desktop nothing. */
   .action-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  .choice-fight { border-color: rgba(168,18,31,.55) !important; }
-  .choice-fight:hover, .choice-fight.selected { border-color: var(--red-glow) !important; background: rgba(168,18,31,.14) !important; }
-  .choice-quiz { border-color: rgba(74,143,126,.55) !important; }
-  .choice-quiz:hover, .choice-quiz.selected { border-color: var(--cyan) !important; background: rgba(74,143,126,.14) !important; }
-  .choice-pref { border-color: rgba(184,100,58,.55) !important; }
-  .choice-pref:hover, .choice-pref.selected { border-color: var(--magenta) !important; background: rgba(184,100,58,.14) !important; }
+  .choice-fight { border-color: rgba(255,59,48,.55) !important; }
+  .choice-fight:hover, .choice-fight.selected { border-color: var(--red-glow) !important; background: rgba(255,59,48,.14) !important; }
+  .choice-quiz { border-color: rgba(45,212,200,.55) !important; }
+  .choice-quiz:hover, .choice-quiz.selected { border-color: var(--cyan) !important; background: rgba(45,212,200,.14) !important; }
+  .choice-pref { border-color: rgba(167,139,250,.55) !important; }
+  .choice-pref:hover, .choice-pref.selected { border-color: var(--magenta) !important; background: rgba(167,139,250,.14) !important; }
   .kbd { font-family: var(--font-mono); font-size: 1rem; opacity: .75; }
   .char-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
   @media (min-width: 560px) { .char-grid { grid-template-columns: 1fr 1fr; } }
@@ -99,20 +105,20 @@
   .char-card .char-hp { font-family: var(--font-mono); color: var(--red-glow); font-size: 1.2rem; }
   .char-card .char-desc { font-family: var(--font-body); font-size: 1.2rem; color: var(--muted); line-height: 1.55; }
   .game-stage { position: relative; width: 100%; height: min(66vh,580px); min-height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid var(--edge); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
-  #scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
   .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 14px 20px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
   .status-left { display: flex; flex-direction: column; gap: 2px; }
   .status-left .char { color: var(--cyan); font-size: 1.3rem; font-family: var(--font-ui); font-weight: 600; }
   .status-left .stage { font-size: 1.45rem; font-family: var(--font-ui); font-weight: 700; }
   .hearts { font-size: 2.4rem; letter-spacing: 3px; }
-  .heart-full { color: var(--red-glow); text-shadow: 0 0 10px rgba(226,64,44,.8); }
-  .heart-empty { color: #4a2f30; }
+  .heart-full { color: var(--red-glow); text-shadow: 0 0 10px rgba(255,107,92,.8); }
+  .heart-empty { color: #3a2e2c; }
   .inventory { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; order: 3; }
-  .chip { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 700; background: rgba(201,143,63,.18); border: 1.5px solid rgba(201,143,63,.5); color: var(--amber); border-radius: 999px; padding: 8px 18px; }
+  .chip { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 700; background: rgba(255,176,32,.18); border: 1.5px solid rgba(255,176,32,.5); color: var(--amber); border-radius: 999px; padding: 8px 18px; }
   .minimap-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-  .minimap-wrap svg { background: rgba(6,7,10,.6); border: 1.5px solid rgba(74,143,126,.4); border-radius: 8px; }
+  .minimap-wrap svg { background: rgba(6,7,10,.6); border: 1.5px solid rgba(45,212,200,.4); border-radius: 8px; }
   .dpad { position: absolute; left: 8px; bottom: 8px; z-index: 3; display: grid; grid-template-columns: repeat(3, clamp(56px, 17vw, 80px)); grid-template-rows: repeat(2, clamp(56px, 17vw, 80px)); gap: 6px; }
-  .dpad-btn { padding: 0; font-size: clamp(1.6rem, 6vw, 2.3rem); line-height: 1; background: rgba(10,8,13,.72); border-color: rgba(74,143,126,.55); backdrop-filter: blur(2px); min-height: 0; }
+  .dpad-btn { padding: 0; font-size: clamp(1.6rem, 6vw, 2.3rem); line-height: 1; background: rgba(10,8,13,.72); border-color: rgba(45,212,200,.55); backdrop-filter: blur(2px); min-height: 0; }
   /* The primary touch action -- picking up an item / engaging a
      discovered encounter. There is no spacebar on a phone, so this IS
      the only way to trigger that on mobile; mirrors the D-pad on the
@@ -123,35 +129,35 @@
     font-family: var(--font-display); font-size: clamp(1.05rem, 4.6vw, 1.3rem); line-height: 1.15; text-align: center;
     background: radial-gradient(circle at 35% 30%, #ffdca0, var(--amber) 70%);
     color: #2a1a06; border: 3px solid #fff2d6; min-height: 0; padding: 4px;
-    box-shadow: 0 0 0 0 rgba(201,143,63,.6), 0 6px 18px rgba(0,0,0,.5);
+    box-shadow: 0 0 0 0 rgba(255,176,32,.6), 0 6px 18px rgba(0,0,0,.5);
     animation: interact-pulse 1.6s ease-in-out infinite;
   }
   .interact-btn:hover { background: radial-gradient(circle at 35% 30%, #ffe6b8, var(--amber) 70%); }
   @keyframes interact-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(201,143,63,.55), 0 6px 18px rgba(0,0,0,.5); }
-    50% { box-shadow: 0 0 0 14px rgba(201,143,63,0), 0 6px 18px rgba(0,0,0,.5); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,176,32,.55), 0 6px 18px rgba(0,0,0,.5); }
+    50% { box-shadow: 0 0 0 14px rgba(255,176,32,0), 0 6px 18px rgba(0,0,0,.5); }
   }
   @media (prefers-reduced-motion: reduce) { .interact-btn { animation: none; } }
   .dpad-up { grid-column: 2; grid-row: 1; }
   .dpad-left { grid-column: 1; grid-row: 2; }
   .dpad-right { grid-column: 3; grid-row: 2; }
   .dpad-down { grid-column: 2; grid-row: 2; }
-  .toast { position: absolute; top: 84px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 3; background: rgba(14,12,18,.92); border: 1.5px solid rgba(74,143,126,.4); border-radius: 10px; padding: 12px 20px; font-family: var(--font-body); font-size: 1.25rem; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; max-width: 88%; text-align: center; }
+  .toast { position: absolute; top: 84px; left: 50%; transform: translateX(-50%) translateY(-6px); z-index: 3; background: rgba(14,12,18,.92); border: 1.5px solid rgba(45,212,200,.4); border-radius: 10px; padding: 12px 20px; font-family: var(--font-body); font-size: 1.25rem; color: var(--ink); opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; max-width: 88%; text-align: center; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   /* action-panel lives BELOW the 3D view (not overlaid on it), so it
      never collides with the D-pad or any other canvas overlay. */
   .action-panel { min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
   .action-panel:empty { display: none; }
   .action-panel.shock { animation: shock-flash .4s ease-out; }
-  @keyframes shock-flash { 0% { box-shadow: inset 0 0 40px 6px rgba(168,18,31,.5); } 100% { box-shadow: inset 0 0 0 0 rgba(168,18,31,0); } }
+  @keyframes shock-flash { 0% { box-shadow: inset 0 0 40px 6px rgba(255,59,48,.5); } 100% { box-shadow: inset 0 0 0 0 rgba(255,59,48,0); } }
   @media (prefers-reduced-motion: reduce) { .action-panel.shock { animation: none; } }
   .hint-line { font-family: var(--font-ui); font-size: 1.15rem; color: var(--muted); margin: 0 0 8px; text-align: center; }
   .quiz-question, .pref-prompt { font-family: var(--font-body); font-size: 1.4rem; line-height: 1.55; margin: 0 0 16px; }
   .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .result-message { font-family: var(--font-body); font-size: 1.35rem; line-height: 1.55; margin: 0 0 16px; }
   .badge { display: inline-block; font-family: var(--font-mono); font-size: .95rem; letter-spacing: .08em; padding: 5px 14px; border-radius: 999px; margin-bottom: 10px; }
-  .badge-success { background: rgba(111,174,124,.18); color: var(--good); border: 1px solid rgba(111,174,124,.4); }
-  .badge-fail { background: rgba(168,18,31,.18); color: var(--red-glow); border: 1px solid rgba(168,18,31,.4); }
+  .badge-success { background: rgba(52,211,153,.18); color: var(--good); border: 1px solid rgba(52,211,153,.4); }
+  .badge-fail { background: rgba(255,59,48,.18); color: var(--red-glow); border: 1px solid rgba(255,59,48,.4); }
   .stage-clear, .game-over, .season-clear { text-align: center; }
   .stage-clear h2, .game-over h2, .season-clear h2 { font-family: var(--font-display); font-size: 2.1rem; margin: 10px 0 6px; }
   .stage-clear h2 { color: var(--cyan); }
@@ -685,12 +691,12 @@
     opts = opts || {};
     const n = maze.n, U = opts.unit || 14;
     const lines = wallSegments(maze).map(([x1, y1, x2, y2]) =>
-      `<line x1="${x1 * U}" y1="${y1 * U}" x2="${x2 * U}" y2="${y2 * U}" stroke="${opts.wallColor || "#4a8f7e"}" stroke-width="${opts.wallWidth || 1.4}" stroke-linecap="round"/>`
+      `<line x1="${x1 * U}" y1="${y1 * U}" x2="${x2 * U}" y2="${y2 * U}" stroke="${opts.wallColor || "#2dd4c8"}" stroke-width="${opts.wallWidth || 1.4}" stroke-linecap="round"/>`
     ).join("");
     let pathHtml = "";
     if (opts.path && opts.path.length > 1) {
       const pts = opts.path.map(([r, c]) => `${(c + 0.5) * U},${(r + 0.5) * U}`).join(" ");
-      pathHtml = `<polyline points="${pts}" fill="none" stroke="${opts.pathColor || "#c98f3f"}" stroke-width="${opts.pathWidth || 3}" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+      pathHtml = `<polyline points="${pts}" fill="none" stroke="${opts.pathColor || "#ffb020"}" stroke-width="${opts.pathWidth || 3}" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
     }
     const s = maze.start, ex = maze.exit;
     let markers = `<circle cx="${(s.c + 0.5) * U}" cy="${(s.r + 0.5) * U}" r="${U * 0.22}" fill="${opts.startColor || "#3b82f6"}"/>`;
@@ -699,7 +705,7 @@
     if (opts.player) {
       const { row, col, facing } = opts.player;
       const cx = (col + 0.5) * U, cy = (row + 0.5) * U, rot = [0, 90, 180, 270][facing];
-      player = `<g transform="translate(${cx},${cy}) rotate(${rot})"><polygon points="0,-${U * 0.34} ${U * 0.22},${U * 0.22} -${U * 0.22},${U * 0.22}" fill="${opts.playerColor || "#c98f3f"}"/></g>`;
+      player = `<g transform="translate(${cx},${cy}) rotate(${rot})"><polygon points="0,-${U * 0.34} ${U * 0.22},${U * 0.22} -${U * 0.22},${U * 0.22}" fill="${opts.playerColor || "#ffb020"}"/></g>`;
     }
     return `<svg width="${n * U}" height="${n * U}" viewBox="0 0 ${n * U} ${n * U}" xmlns="http://www.w3.org/2000/svg">
       <rect width="${n * U}" height="${n * U}" fill="${opts.bg || "transparent"}"/>${lines}${pathHtml}${markers}${player}
@@ -788,7 +794,7 @@
     antenna.position.y = 0.43; group.add(antenna);
     const grille = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.02), new THREE.MeshStandardMaterial({ color: 0x111318 }));
     grille.position.set(0, 0.2, 0.06); group.add(grille);
-    const btn = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), new THREE.MeshStandardMaterial({ color: 0xa8121f, emissive: 0xa8121f, emissiveIntensity: 0.6 }));
+    const btn = new THREE.Mesh(new THREE.SphereGeometry(0.015, 6, 6), new THREE.MeshStandardMaterial({ color: 0xff3b30, emissive: 0xff3b30, emissiveIntensity: 0.6 }));
     btn.position.set(0, 0.08, 0.06); group.add(btn);
     return group;
   }
@@ -859,7 +865,7 @@
   }
   function drawQuestionPixels(ctx, px) {
     ctx.clearRect(0, 0, px, px);
-    ctx.fillStyle = "#c98f3f";
+    ctx.fillStyle = "#ffb020";
     ctx.font = `900 ${Math.floor(px * 0.8)}px monospace`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("?", px / 2, px / 2 + px * 0.03);
@@ -952,7 +958,7 @@
       const wallTex = buildWallTexture(theme);
       const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, color: theme.wall, roughness: 0.82, metalness: 0.06 });
       const doorTex = buildDoorTexture(theme);
-      const doorMat = new THREE.MeshStandardMaterial({ map: doorTex, emissive: 0xc98f3f, emissiveIntensity: 0.25, roughness: 0.6 });
+      const doorMat = new THREE.MeshStandardMaterial({ map: doorTex, emissive: 0xffb020, emissiveIntensity: 0.25, roughness: 0.6 });
       const floor = new THREE.Mesh(new THREE.BoxGeometry(span, 0.2, span), floorMat);
       floor.position.set(center, -1, center); scene.add(floor);
       const ceil = new THREE.Mesh(new THREE.BoxGeometry(span, 0.2, span), ceilMat);
@@ -977,7 +983,7 @@
         m.position.set(cx, WALL_H / 2 - 1, cz);
         scene.add(m);
         if (doorFace) {
-          const l = new THREE.PointLight(0xc98f3f, 1.5, 9, 2);
+          const l = new THREE.PointLight(0xffb020, 1.5, 9, 2);
           l.position.set(cx, 1.6, cz);
           scene.add(l); flicker.push(l);
         }
@@ -1094,7 +1100,7 @@
         g.position.set(baseX + side.x * lateral, baseY, baseZ + side.z * lateral);
         g.scale.setScalar(1.8);
         g.userData.baseY = baseY;
-        const glow = new THREE.PointLight(0xc98f3f, 1.4, 5, 2);
+        const glow = new THREE.PointLight(0xffb020, 1.4, 5, 2);
         glow.position.set(0, 0.5, 0); g.add(glow);
         scene.add(g);
         return g;
@@ -1314,7 +1320,7 @@
     const mm = String(Math.floor(elapsed / 60000)).padStart(2, "0");
     const ss = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0");
     const score = Math.max(0, 1000 - G.state.moves * 8 - Math.floor(elapsed / 1000) * 3);
-    const svg = buildMazeSVG(G.maze, { unit: 20, path: G.state.path, wallColor: "#5a4a34", pathColor: "#c98f3f" });
+    const svg = buildMazeSVG(G.maze, { unit: 20, path: G.state.path, wallColor: "#5a6272", pathColor: "#ffb020" });
     const isFinal = G.state.seasonCleared;
     viewport.innerHTML = `
       <div class="stage-clear">
@@ -1338,7 +1344,7 @@
     refreshMenuButtons();
   }
   function renderGameOver() {
-    const svg = buildMazeSVG(G.maze, { unit: 20, path: G.state.path, wallColor: "#5a4a34", pathColor: "#9a5a5a" });
+    const svg = buildMazeSVG(G.maze, { unit: 20, path: G.state.path, wallColor: "#5a6272", pathColor: "#c8564a" });
     viewport.innerHTML = `
       <div class="game-over">
         <span class="badge badge-fail">GAME OVER</span>
@@ -1466,6 +1472,29 @@
     else if (move === "right") doTurnRight();
   });
   interactBtn.addEventListener("click", () => { if (ui.phase === "junction") trySpaceAction(); });
+
+  // Drag directly on the 3D view to move -- a swipe up/down steps
+  // forward/backward, left/right turns. Works with touch or mouse; the
+  // D-pad stays as the explicit alternative for precise single steps.
+  (() => {
+    const canvasEl = document.getElementById("scene-canvas");
+    const SWIPE_THRESHOLD = 32;
+    let dragging = false, startX = 0, startY = 0;
+    canvasEl.addEventListener("pointerdown", (e) => {
+      if (ui.phase !== "junction") return;
+      dragging = true; startX = e.clientX; startY = e.clientY;
+      canvasEl.setPointerCapture(e.pointerId);
+    });
+    canvasEl.addEventListener("pointerup", (e) => {
+      if (!dragging) return;
+      dragging = false;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return; // a tap, not a drag
+      if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) doTurnRight(); else doTurnLeft(); }
+      else { if (dy < 0) doForward(); else doBackward(); }
+    });
+    canvasEl.addEventListener("pointercancel", () => { dragging = false; });
+  })();
 
   document.getElementById("screen-title").addEventListener("click", (e) => {
     const btn = e.target.closest("[data-action]");
