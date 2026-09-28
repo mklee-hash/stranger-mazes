@@ -1302,6 +1302,7 @@
   };
 
   function showScreen(name) {
+    window.scrollTo(0, 0);
     for (const k in screens) {
       const el = screens[k];
       if (k === name) {
