@@ -67,10 +67,6 @@
     margin: 0; text-wrap: balance;
   }
   #splash .sub { display: block; font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.28em; color: var(--cyan); margin-top: 10px; }
-  .menu-btn {
-    position: absolute; top: 8px; right: 8px; z-index: 4; min-height: 0; padding: 10px 14px;
-    font-size: clamp(1.1rem, 4vw, 1.4rem); background: rgba(10,8,13,.72); backdrop-filter: blur(2px);
-  }
   .setting-row {
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     font-family: var(--font-ui); font-size: 1.15rem; color: var(--ink); cursor: pointer;
@@ -161,7 +157,7 @@
   .char-card .char-desc { font-family: var(--font-body); font-size: 1.2rem; color: var(--muted); line-height: 1.55; }
   .game-stage { position: relative; width: 100%; height: min(66vh,580px); min-height: 380px; border-radius: 12px; overflow: hidden; border: 1px solid var(--edge); background: #000; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
   #scene-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 56px 20px 14px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
+  .hud-status { position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: 12px 14px 20px; background: linear-gradient(to bottom, rgba(10,8,14,.82), transparent); font-family: var(--font-mono); display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px 16px; }
   .status-left { display: flex; flex-direction: column; gap: 2px; }
   .status-left .char { color: var(--cyan); font-size: 1.3rem; font-family: var(--font-ui); font-weight: 600; }
   .status-left .stage { font-size: 1.45rem; font-family: var(--font-ui); font-weight: 700; }
@@ -291,7 +287,6 @@
     <div class="game-stage">
       <canvas id="scene-canvas"></canvas>
       <div class="hud-status" id="status-bar"></div>
-      <button class="menu-btn" data-action="goto-menu" aria-label="메뉴로">☰</button>
       <div class="toast" id="toast"></div>
       <div class="dpad" id="dpad">
         <button class="dpad-btn dpad-up" data-move="forward" aria-label="전진">▲</button>
@@ -302,9 +297,9 @@
       <button class="interact-btn" id="interact-btn" type="button" hidden>줍기</button>
     </div>
     <div class="panel action-panel" id="viewport"></div>
+    <p class="footnote">↑↓ 전진/후진 · ← → 회전 · Space 상호작용/선택 · ↓ 조우 취소 · Enter 확정 · 1·2·3 단축키</p>
+    <div class="center"><button data-action="goto-menu">메뉴로</button></div>
   </main>
-
-  <p class="footnote">↑↓ 전진/후진 · ← → 회전 · Space 상호작용/선택 · ↓ 조우 취소 · Enter 확정 · 1·2·3 단축키</p>
 </div>
 <div id="splash">
   <h1>기묘한 미로</h1>
@@ -1667,8 +1662,12 @@
       dragging = false;
       const dx = e.clientX - startX, dy = e.clientY - startY;
       if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return; // a tap, not a drag
-      if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) doTurnRight(); else doTurnLeft(); }
-      else { if (dy < 0) doForward(); else doBackward(); }
+      // Dragging the view works like panning a map/360 photo: you drag the
+      // scene itself, so the camera turns the opposite way your finger
+      // moves, and dragging down (pulling the ground toward you) steps
+      // you forward into it.
+      if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0) doTurnLeft(); else doTurnRight(); }
+      else { if (dy > 0) doForward(); else doBackward(); }
     });
     canvasEl.addEventListener("pointercancel", () => { dragging = false; });
   })();
