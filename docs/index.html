@@ -77,6 +77,12 @@
   }
   .setting-row input[type="checkbox"] { width: 1.6em; height: 1.6em; accent-color: var(--cyan); cursor: pointer; }
   .stage-intro-title { font-family: var(--font-display); font-size: clamp(1.6rem, 6vw, 2.1rem); color: var(--ink); margin: 8px 0 14px; }
+  /* GitHub Pages serves this file standalone (no artifact wrapper stylesheet),
+     so [hidden] needs its own !important rule here -- otherwise .screen's
+     display:flex below ties with the browser default [hidden]{display:none}
+     on specificity and wins by source order, leaving every "hidden" screen
+     visibly stacked in the page instead of actually hidden. */
+  [hidden] { display: none !important; }
   .screen {
     display: flex; flex-direction: column; gap: 18px;
     opacity: 0; transform: translateY(10px); transition: opacity .3s ease, transform .3s ease;
