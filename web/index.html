@@ -1301,8 +1301,16 @@
     5: "뒤집힌 세계의 심장부, 크릴 하우스. 이 미로 어딘가에서 강화된 데모고르곤이 최후의 결전을 기다리고 있다.",
   };
 
-  function showScreen(name) {
+  function resetScroll() {
     window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+  function showScreen(name) {
+    // Blur first: a focused button can make the browser scroll it back
+    // into view right after we reset scroll, undoing the reset.
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    resetScroll();
     for (const k in screens) {
       const el = screens[k];
       if (k === name) {
@@ -1318,6 +1326,10 @@
         el.hidden = true;
       }
     }
+    // The browser can still schedule a focus/layout-driven scroll for
+    // this same click after our synchronous reset runs, so reassert the
+    // top position once more on the next frame.
+    requestAnimationFrame(resetScroll);
   }
   function applyDpadSetting() {
     let show = true;
